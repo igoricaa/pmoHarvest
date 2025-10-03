@@ -50,7 +50,20 @@ const expenseSchema = z.object({
   project_id: z.string().min(1, 'Project is required'),
   expense_category_id: z.string().min(1, 'Category is required'),
   spent_date: z.date({ message: 'Date is required' }),
-  total_cost: z.string().min(1, 'Amount is required'),
+  total_cost: z
+    .string()
+    .min(1, 'Amount is required')
+    .refine(
+      (val) => {
+        const num = Number.parseFloat(val);
+        return !Number.isNaN(num) && num > 0;
+      },
+      { message: 'Amount must be greater than 0' },
+    )
+    .refine(
+      (val) => /^\d+(\.\d{1,2})?$/.test(val),
+      { message: 'Amount must be a valid number (e.g., 100 or 100.50)' },
+    ),
   notes: z.string().optional(),
 });
 
@@ -189,12 +202,54 @@ export default function ExpensesPage() {
                           <div className="relative">
                             <DollarSign className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                             <Input
-                              type="number"
-                              step="0.01"
-                              min="0"
+                              inputMode="decimal"
                               placeholder="100.00"
                               className="pl-9"
                               {...field}
+                              onKeyDown={(e) => {
+                                // Allow: backspace, delete, tab, escape, enter, decimal point
+                                if (
+                                  [46, 8, 9, 27, 13, 110, 190].indexOf(e.keyCode) !== -1 ||
+                                  // Allow: Ctrl/Cmd+A, Ctrl/Cmd+C, Ctrl/Cmd+V, Ctrl/Cmd+X
+                                  (e.keyCode === 65 && (e.ctrlKey === true || e.metaKey === true)) ||
+                                  (e.keyCode === 67 && (e.ctrlKey === true || e.metaKey === true)) ||
+                                  (e.keyCode === 86 && (e.ctrlKey === true || e.metaKey === true)) ||
+                                  (e.keyCode === 88 && (e.ctrlKey === true || e.metaKey === true)) ||
+                                  // Allow: home, end, left, right
+                                  (e.keyCode >= 35 && e.keyCode <= 39)
+                                ) {
+                                  return;
+                                }
+                                // Ensure that it's a number and stop the keypress if not
+                                if (
+                                  (e.shiftKey || e.keyCode < 48 || e.keyCode > 57) &&
+                                  (e.keyCode < 96 || e.keyCode > 105)
+                                ) {
+                                  e.preventDefault();
+                                }
+                              }}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                // Allow empty string
+                                if (value === '') {
+                                  field.onChange(value);
+                                  return;
+                                }
+                                // Remove any non-numeric characters except decimal point
+                                const sanitized = value.replace(/[^\d.]/g, '');
+                                // Ensure only one decimal point
+                                const parts = sanitized.split('.');
+                                const cleaned =
+                                  parts.length > 2
+                                    ? parts[0] + '.' + parts.slice(1).join('')
+                                    : sanitized;
+                                // Limit to 2 decimal places
+                                const limited =
+                                  parts.length === 2 && parts[1].length > 2
+                                    ? parts[0] + '.' + parts[1].slice(0, 2)
+                                    : cleaned;
+                                field.onChange(limited);
+                              }}
                             />
                           </div>
                         </FormControl>
