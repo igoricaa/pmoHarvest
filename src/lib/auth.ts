@@ -20,6 +20,18 @@ export const auth = betterAuth({
     ? [process.env.NEXT_PUBLIC_APP_URL]
     : [],
 
+  // Advanced cookie configuration for production
+  advanced: {
+    cookiePrefix: "better-auth",
+    useSecureCookies: process.env.NODE_ENV === "production",
+    defaultCookieAttributes: {
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      httpOnly: true,
+      path: "/",
+    },
+  },
+
   // Session configuration
   session: {
     expiresIn: 60 * 60 * 24 * 7, // 7 days
