@@ -16,8 +16,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Check for session cookie
-  const sessionToken = request.cookies.get('better-auth.session_token');
+  // Check for session cookie (handles both secure and non-secure cookie names)
+  // Production (HTTPS) uses __Secure- prefix, localhost (HTTP) does not
+  const sessionToken =
+    request.cookies.get('__Secure-better-auth.session_token') ||
+    request.cookies.get('better-auth.session_token');
 
   // Debug logging (will show in Vercel function logs)
   console.log('[Middleware] Path:', pathname);
