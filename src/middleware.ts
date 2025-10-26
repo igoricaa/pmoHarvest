@@ -1,12 +1,31 @@
-import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 
-const isPublicRoute = createRouteMatcher(['/sign-in(.*)', '/sign-up(.*)']);
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
 
-export default clerkMiddleware(async (auth, request) => {
-  if (!isPublicRoute(request)) {
-    await auth.protect();
+  // Public routes that don't require authentication
+  const publicRoutes = ['/sign-in', '/api/auth'];
+
+  const isPublicRoute = publicRoutes.some((route) => pathname.startsWith(route));
+
+  // Allow public routes
+  if (isPublicRoute) {
+    return NextResponse.next();
   }
-});
+
+  // Check for session cookie
+  const sessionToken = request.cookies.get('better-auth.session_token');
+
+  // Redirect to sign-in if no session
+  if (!sessionToken) {
+    const signInUrl = new URL('/sign-in', request.url);
+    signInUrl.searchParams.set('callbackUrl', pathname);
+    return NextResponse.redirect(signInUrl);
+  }
+
+  return NextResponse.next();
+}
 
 export const config = {
   matcher: [

@@ -1,14 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { auth } from '@/lib/auth';
 import { createHarvestClient } from '@/lib/harvest';
 import { getErrorMessage } from '@/lib/api-utils';
 import type { CreateTimeEntryInput, TimeEntryQueryParams } from '@/types/harvest';
 
 export async function GET(request: NextRequest) {
   try {
-    const { userId } = await auth();
-    if (!userId) {
+    const session = await auth.api.getSession({ headers: request.headers });
+    if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Get user-specific Harvest token
+    const { accessToken } = await auth.api.getAccessToken({
+      body: { providerId: 'harvest' },
+      headers: request.headers,
+    });
+
+    if (!accessToken) {
+      return NextResponse.json({ error: 'No Harvest access token found' }, { status: 401 });
     }
 
     const searchParams = request.nextUrl.searchParams;
@@ -22,7 +32,7 @@ export async function GET(request: NextRequest) {
       is_running: searchParams.get('is_running') ? searchParams.get('is_running') === 'true' : undefined,
     };
 
-    const harvestClient = createHarvestClient();
+    const harvestClient = createHarvestClient(accessToken);
     const timeEntries = await harvestClient.getTimeEntries(params);
 
     return NextResponse.json(timeEntries);
@@ -37,14 +47,24 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = await auth();
-    if (!userId) {
+    const session = await auth.api.getSession({ headers: request.headers });
+    if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Get user-specific Harvest token
+    const { accessToken } = await auth.api.getAccessToken({
+      body: { providerId: 'harvest' },
+      headers: request.headers,
+    });
+
+    if (!accessToken) {
+      return NextResponse.json({ error: 'No Harvest access token found' }, { status: 401 });
     }
 
     const body: CreateTimeEntryInput = await request.json();
 
-    const harvestClient = createHarvestClient();
+    const harvestClient = createHarvestClient(accessToken);
     const timeEntry = await harvestClient.createTimeEntry(body);
 
     return NextResponse.json(timeEntry, { status: 201 });

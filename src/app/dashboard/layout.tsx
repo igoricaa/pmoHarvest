@@ -1,4 +1,4 @@
-import { UserButton } from '@clerk/nextjs';
+import { UserButton } from '@/components/user-button';
 import Link from 'next/link';
 import { Clock, Receipt, LayoutDashboard } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
@@ -33,13 +33,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             ))}
           </nav>
           <div className="flex items-center gap-4">
-            <UserButton
-              appearance={{
-                elements: {
-                  avatarBox: 'w-8 h-8',
-                },
-              }}
-            />
+            <UserButton />
           </div>
         </div>
       </header>

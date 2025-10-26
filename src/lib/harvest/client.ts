@@ -40,8 +40,11 @@ export class HarvestAPIError extends Error {
 
 export class HarvestClient {
   private client: AxiosInstance;
+  private accessToken: string;
 
   constructor(accountId: string, accessToken: string) {
+    this.accessToken = accessToken;
+
     this.client = axios.create({
       baseURL: HARVEST_API_BASE_URL,
       headers: {
@@ -57,6 +60,8 @@ export class HarvestClient {
       (response) => response,
       (error: AxiosError<any>) => {
         if (error.response) {
+          // If we get a 401, the token might be expired
+          // The calling code should handle token refresh and retry
           throw new HarvestAPIError(
             error.response.data?.error_description ||
               error.response.data?.message ||
@@ -68,6 +73,15 @@ export class HarvestClient {
         throw new HarvestAPIError(error.message, 500);
       },
     );
+  }
+
+  /**
+   * Update the access token for this client
+   * Used after token refresh
+   */
+  updateAccessToken(newToken: string): void {
+    this.accessToken = newToken;
+    this.client.defaults.headers.Authorization = `Bearer ${newToken}`;
   }
 
   // ============================================================================
@@ -290,15 +304,16 @@ export class HarvestClient {
   }
 }
 
-// Factory function to create a Harvest client instance
-export function createHarvestClient(): HarvestClient {
+// Factory function to create a Harvest client instance with user-specific token
+export function createHarvestClient(accessToken: string): HarvestClient {
   const accountId = process.env.HARVEST_ACCOUNT_ID;
-  const accessToken = process.env.HARVEST_ACCESS_TOKEN;
 
-  if (!accountId || !accessToken) {
-    throw new Error(
-      'HARVEST_ACCOUNT_ID and HARVEST_ACCESS_TOKEN must be set in environment variables',
-    );
+  if (!accountId) {
+    throw new Error('HARVEST_ACCOUNT_ID must be set in environment variables');
+  }
+
+  if (!accessToken) {
+    throw new Error('Access token is required to create Harvest client');
   }
 
   return new HarvestClient(accountId, accessToken);

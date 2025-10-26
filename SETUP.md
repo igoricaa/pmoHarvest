@@ -1,212 +1,191 @@
-# PMO Harvest Portal - Setup Guide
+# PMO Harvest Portal - Setup
 
-## Quick Start
+## Prerequisites
 
-### 1. Environment Setup
+- Node.js 18+
+- pnpm
+- Neon PostgreSQL account (free tier works)
+- Harvest account with OAuth app
 
-Copy the example environment file:
+## 1. Database Setup
+
+1. Go to [neon.tech](https://neon.tech)
+2. Create new project
+3. Copy connection string
+4. Add to `.env.local`: `DATABASE_URL=postgresql://...`
+
+## 2. Harvest OAuth App
+
+1. Go to [id.getharvest.com/oauth2_clients](https://id.getharvest.com/oauth2_clients)
+2. Create new OAuth2 application:
+   - **Name**: PMO Harvest Portal
+   - **Redirect URI**: `http://localhost:3000/api/auth/callback/harvest`
+   - Production: `https://yourdomain.com/api/auth/callback/harvest`
+3. Copy **Client ID** and **Client Secret**
+
+## 3. Environment Variables
+
+Create `.env.local`:
 
 ```bash
 cp .env.local.example .env.local
 ```
 
-Edit `.env.local` and add your credentials:
+Configure:
 
-#### Clerk (Authentication)
-1. Go to [https://dashboard.clerk.com](https://dashboard.clerk.com)
-2. Create a new application or use an existing one
-3. Navigate to **API Keys** in the sidebar
-4. Copy your keys:
+```bash
+# Better Auth
+BETTER_AUTH_SECRET=              # Run: openssl rand -base64 32
+NEXT_PUBLIC_APP_URL=http://localhost:3000
 
-```env
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
-CLERK_SECRET_KEY=sk_test_...
+# Database
+DATABASE_URL=postgresql://...    # From Neon
+
+# Harvest OAuth
+HARVEST_OAUTH_CLIENT_ID=         # From OAuth app
+HARVEST_OAUTH_CLIENT_SECRET=     # From OAuth app
+HARVEST_ACCOUNT_ID=              # From id.getharvest.com/developers
+
+# Optional: Receipt uploads
+UPLOADTHING_SECRET=
+UPLOADTHING_APP_ID=
 ```
 
-#### Harvest (Time & Expense API)
-1. Go to [https://id.getharvest.com/developers](https://id.getharvest.com/developers)
-2. Create a new Personal Access Token
-3. Copy your Account ID and Access Token:
-
-```env
-HARVEST_ACCOUNT_ID=1234567
-HARVEST_ACCESS_TOKEN=your_token_here
-```
-
-### 2. Install Dependencies
+## 4. Install & Run
 
 ```bash
 pnpm install
-```
-
-### 3. Run Development Server
-
-```bash
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Navigate to `http://localhost:3000` → redirects to `/sign-in` → "Sign in with Harvest"
 
-## Features Overview
+## Production Deployment
 
-### ✅ Authentication
-- Secure login with Clerk
-- SSO support ready
-- Protected routes via middleware
+1. Create production Neon database
+2. Update Harvest OAuth app redirect URI to production URL
+3. Set environment variables in deployment platform
+4. Deploy (Vercel/Netlify/etc)
 
-### ✅ Time Entry
-- **Route:** `/dashboard/time`
-- Log hours against projects and tasks
-- Date picker for selecting work date
-- Project and task dropdowns (dynamically loaded from Harvest)
-- Hours input with decimal support
-- Optional notes field
-- View recent time entries (last 30 days)
-- Delete time entries
-- See total hours logged
+Database schema auto-created on first run.
 
-### ✅ Expense Tracking
-- **Route:** `/dashboard/expenses`
-- Submit expenses with amount and category
-- Associate with projects
-- Optional notes
-- View recent expenses (last 30 days)
-- Track status (Pending/Locked/Billed)
-- Delete pending expenses
-- See total expense amount
+## Multi-User Setup
 
-### ✅ Dashboard
-- **Route:** `/dashboard`
-- Weekly hours summary
-- Monthly hours summary
-- Monthly expense total
-- Pending expenses count
-- Recent activity feed (time & expenses)
-- Quick action buttons
+This portal supports multiple consultants! Each consultant:
 
-## Project Structure
+1. Must have a Harvest account in **your organization** (PMO Hive)
+2. Signs in with **their own** Harvest credentials
+3. Gets **their own** OAuth token (not shared)
+4. Sees **only their own** data (time entries, expenses)
 
-```
-src/
-├── app/
-│   ├── api/harvest/              # Secure API proxy to Harvest
-│   │   ├── time-entries/        # Time entry CRUD
-│   │   ├── expenses/            # Expense CRUD
-│   │   ├── projects/            # Project listings
-│   │   └── expense-categories/  # Expense categories
-│   ├── dashboard/               # Main app pages
-│   │   ├── time/               # Time entry page
-│   │   ├── expenses/           # Expense page
-│   │   └── page.tsx            # Dashboard home
-│   ├── sign-in/                # Clerk sign-in
-│   └── sign-up/                # Clerk sign-up
-├── components/
-│   └── ui/                     # shadcn/ui components
-├── lib/
-│   ├── harvest/                # Harvest API client
-│   └── api-utils.ts            # API utilities
-├── hooks/
-│   └── use-harvest.ts          # React Query hooks
-└── types/
-    └── harvest.ts              # TypeScript types
-```
+### Adding New Consultants
 
-## API Routes
+1. Add user to your Harvest organization at [harvest.com](https://id.getharvest.com/users)
+2. Assign appropriate role (administrator/manager/member)
+3. Share app URL with them
+4. They sign in with their Harvest email/password
+5. Done! They now have access
 
-All API routes are authenticated via Clerk and proxy requests to Harvest:
+### Important Notes
 
-- `GET /api/harvest/time-entries` - List time entries
-- `POST /api/harvest/time-entries` - Create time entry
-- `PATCH /api/harvest/time-entries/[id]` - Update time entry
-- `DELETE /api/harvest/time-entries/[id]` - Delete time entry
-- `GET /api/harvest/expenses` - List expenses
-- `POST /api/harvest/expenses` - Create expense
-- `GET /api/harvest/projects` - List projects
-- `GET /api/harvest/projects/[id]/tasks` - Get project tasks
-- `GET /api/harvest/expense-categories` - List expense categories
-- `GET /api/harvest/users/me` - Get current user
-
-## Development Commands
-
-```bash
-# Run development server
-pnpm dev
-
-# Build for production
-pnpm build
-
-# Start production server (after build)
-pnpm start
-
-# Lint code
-pnpm lint
-
-# Format code
-pnpm format
-```
-
-## Deployment
-
-### Vercel (Recommended)
-
-1. Push code to GitHub
-2. Import repository in [Vercel](https://vercel.com)
-3. Add all environment variables from `.env.local`
-4. Deploy!
-
-### Other Platforms
-
-The app works on any platform that supports Next.js 15:
-- Netlify
-- Railway
-- Render
-- AWS Amplify
-- Self-hosted
-
-**Important:** Make sure to set all environment variables in your deployment platform.
-
-## Security
-
-- ✅ Harvest API keys are server-side only
-- ✅ All API routes protected with Clerk authentication
-- ✅ Clerk middleware protects dashboard routes
-- ✅ TypeScript for type safety
-- ✅ Input validation with Zod
-- ✅ No sensitive data in client bundle
+- All consultants must be in the **same Harvest organization**
+- The `HARVEST_ACCOUNT_ID` in `.env.local` is **shared** (your org ID)
+- Each consultant's OAuth token is **unique** to them
+- Data isolation is enforced by Harvest API (user-specific tokens)
 
 ## Troubleshooting
 
-### Build Fails with Missing publishableKey
+### "No Harvest access token found"
 
-This means Clerk environment variables aren't set. Add them to `.env.local`.
+**Cause**: User's session exists but OAuth token is missing
 
-### "Unauthorized" errors
+**Solution**:
+1. Sign out and sign in again
+2. Check that Better Auth database tables exist
+3. Verify `DATABASE_URL` is correct
 
-Make sure you're signed in and your Clerk session is valid.
+### "Failed to fetch user info from Harvest"
 
-### No projects/tasks showing up
+**Cause**: Invalid account ID or user not in organization
 
-1. Check Harvest credentials in `.env.local`
-2. Make sure you have active projects in Harvest
-3. Check browser console for API errors
+**Solution**:
+1. Verify `HARVEST_ACCOUNT_ID` in `.env.local` (should be numeric)
+2. Confirm user has account in your Harvest organization
+3. Check user is not deactivated in Harvest
 
-### Time entries not saving
+### OAuth Errors (access_denied, invalid_state)
 
-1. Verify Harvest API token has write permissions
-2. Check that the project and task are active
-3. Look for errors in the browser console
+**Cause**: User denied access or OAuth state mismatch
 
-## Next Steps
+**Solution**:
+1. User should approve access when signing in
+2. Clear cookies and try again
+3. Check redirect URI matches exactly in Harvest OAuth app
 
-- [ ] Add receipt upload for expenses (UploadThing ready)
-- [ ] Add manager approval workflow
-- [ ] Add filtering and search
-- [ ] Add export to CSV/Excel
-- [ ] Add email notifications
-- [ ] Add mobile app
+### Database Connection Errors
 
-## Support
+**Cause**: Invalid `DATABASE_URL` or network issue
 
-- **Harvest API Docs:** [https://help.getharvest.com/api-v2/](https://help.getharvest.com/api-v2/)
-- **Clerk Docs:** [https://clerk.com/docs](https://clerk.com/docs)
-- **Next.js Docs:** [https://nextjs.org/docs](https://nextjs.org/docs)
+**Solution**:
+1. Test connection string from Neon dashboard
+2. Ensure SSL mode is included: `?sslmode=require`
+3. Check firewall/network settings
+
+### Token Refresh Failed
+
+**Cause**: Refresh token expired or invalid
+
+**Solution**:
+1. User needs to sign in again (refresh tokens can expire)
+2. Check OAuth app is still active in Harvest
+3. Verify client secret hasn't changed
+
+## Development Tips
+
+### Test with Multiple Users
+
+1. Create multiple Harvest test accounts in your org
+2. Use different browsers/incognito windows
+3. Sign in as different users
+4. Verify data isolation
+
+### Database Inspection
+
+View Better Auth tables:
+
+```sql
+-- View users
+SELECT id, email, name FROM user;
+
+-- View OAuth accounts
+SELECT userId, providerId, accessToken FROM account;
+
+-- View sessions
+SELECT userId, expiresAt FROM session;
+```
+
+### Reset User Token
+
+If a user's token gets corrupted:
+
+```sql
+-- Delete user's OAuth account (forces re-auth)
+DELETE FROM account WHERE userId = 'user_id_here' AND providerId = 'harvest';
+```
+
+User will need to sign in again.
+
+## Security Checklist
+
+Before going to production:
+
+- [ ] Generate strong `BETTER_AUTH_SECRET` (32+ characters)
+- [ ] Use HTTPS for all URLs (never HTTP in production)
+- [ ] Update OAuth redirect URI to production domain
+- [ ] Set `NODE_ENV=production`
+- [ ] Enable database backups (Neon auto-backups)
+- [ ] Review Harvest OAuth app permissions
+- [ ] Test token refresh flow
+- [ ] Verify error handling works
+- [ ] Check all consultants can sign in
+- [ ] Test role-based access control
