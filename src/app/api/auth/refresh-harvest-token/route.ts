@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { refreshHarvestToken } from "@/lib/harvest/token-refresh";
+import {
+  getAccountByUserIdAndProvider,
+  updateAccountTokens,
+} from "@/lib/db/repositories/account";
 
 /**
  * Refresh Harvest OAuth Token
@@ -21,14 +25,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get the current account (which contains the refresh token)
-    // Better Auth stores OAuth tokens in the account table
-    const accounts = await auth.api.listAccounts({
-      headers: request.headers,
-    });
-
-    const harvestAccount = accounts?.find(
-      (account: any) => account.providerId === "harvest"
+    // Get the Harvest account with OAuth tokens from the database
+    const harvestAccount = await getAccountByUserIdAndProvider(
+      session.user.id,
+      "harvest"
     );
 
     if (!harvestAccount?.refreshToken) {
@@ -39,29 +39,36 @@ export async function POST(request: NextRequest) {
     }
 
     // Refresh the token
-    const result = await refreshHarvestToken(harvestAccount.refreshToken);
+    const refreshResult = await refreshHarvestToken(harvestAccount.refreshToken);
 
-    if (!result.success || !result.accessToken || !result.refreshToken) {
-      console.error("Token refresh failed:", result.error);
+    if (!refreshResult.success || !refreshResult.accessToken || !refreshResult.refreshToken) {
+      console.error("Token refresh failed:", refreshResult.error);
 
       return NextResponse.json(
         {
-          error: result.error || "Failed to refresh token",
+          error: refreshResult.error || "Failed to refresh token",
           requiresReauth: true, // Signal that user needs to re-authenticate
         },
         { status: 401 }
       );
     }
 
-    // Update the account with new tokens
-    // Note: Better Auth should have an API to update account tokens,
-    // but if not, we need to update the database directly
-    // For now, we'll return the new token and let the client handle it
+    // Update the account with new tokens in the database
+    // Harvest rotates refresh tokens, so we need to update both
+    const expiresAt = new Date(
+      Date.now() + (refreshResult.expiresIn || 1209600) * 1000
+    );
+
+    await updateAccountTokens(session.user.id, "harvest", {
+      accessToken: refreshResult.accessToken,
+      refreshToken: refreshResult.refreshToken,
+      expiresAt,
+    });
 
     return NextResponse.json({
       success: true,
-      accessToken: result.accessToken,
-      expiresIn: result.expiresIn,
+      accessToken: refreshResult.accessToken,
+      expiresIn: refreshResult.expiresIn,
       message: "Token refreshed successfully",
     });
   } catch (error) {

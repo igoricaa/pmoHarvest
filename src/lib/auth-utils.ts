@@ -4,6 +4,7 @@
  */
 
 import { authClient } from "./auth-client";
+import type { Session } from "@/types/auth";
 
 /**
  * Refresh the user's Harvest access token
@@ -59,10 +60,10 @@ export async function isAuthenticated(): Promise<boolean> {
  *
  * @returns The session data or null
  */
-export async function getCurrentSession() {
+export async function getCurrentSession(): Promise<Session | null> {
   try {
     const session = await authClient.getSession();
-    return session.data;
+    return session.data as Session | null;
   } catch {
     return null;
   }
@@ -91,8 +92,7 @@ export async function hasPermission(
     return false;
   }
 
-  const permissions = session.user.permissions as any;
-  return permissions[resource]?.includes(action) || false;
+  return session.user.permissions[resource]?.includes(action) || false;
 }
 
 /**
@@ -108,6 +108,5 @@ export async function hasRole(role: string): Promise<boolean> {
     return false;
   }
 
-  const roles = session.user.accessRoles as string[];
-  return roles.includes(role);
+  return session.user.accessRoles.includes(role);
 }

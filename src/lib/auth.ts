@@ -207,4 +207,5 @@ function getPermissionsForRole(role: string) {
 }
 
 // Type exports for client
-export type Session = typeof auth.$Infer.Session;
+// Note: Custom Session type is defined in @/types/auth to include Harvest-specific fields
+export type { Session } from "@/types/auth";
