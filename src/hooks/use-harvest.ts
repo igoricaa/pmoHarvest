@@ -277,8 +277,28 @@ export function useCreateExpense() {
 
   return useMutation({
     mutationFn: async (input: CreateExpenseInput) => {
-      const { data } = await axios.post<HarvestExpense>('/api/harvest/expenses', input);
-      return data;
+      // If receipt is present, send as FormData
+      if (input.receipt) {
+        const formData = new FormData();
+        formData.append('project_id', input.project_id.toString());
+        formData.append('expense_category_id', input.expense_category_id.toString());
+        formData.append('spent_date', input.spent_date);
+        if (input.total_cost !== undefined) formData.append('total_cost', input.total_cost.toString());
+        if (input.notes) formData.append('notes', input.notes);
+        if (input.billable !== undefined) formData.append('billable', input.billable.toString());
+        formData.append('receipt', input.receipt);
+
+        const { data } = await axios.post<HarvestExpense>('/api/harvest/expenses', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+        return data;
+      } else {
+        // Send as JSON if no receipt
+        const { data } = await axios.post<HarvestExpense>('/api/harvest/expenses', input);
+        return data;
+      }
     },
     onMutate: async (newExpense) => {
       // Cancel outgoing refetches

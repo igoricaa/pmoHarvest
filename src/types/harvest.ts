@@ -354,10 +354,12 @@ export interface CreateExpenseInput {
   total_cost?: number;
   notes?: string;
   billable?: boolean;
-  receipt?: File | string; // File object or base64 string
+  receipt?: File; // File object for multipart/form-data upload
 }
 
-export interface UpdateExpenseInput extends Partial<CreateExpenseInput> {}
+export interface UpdateExpenseInput extends Partial<CreateExpenseInput> {
+  delete_receipt?: boolean; // Set to true to remove existing receipt
+}
 
 // ============================================================================
 // Report Types (for Dashboard)

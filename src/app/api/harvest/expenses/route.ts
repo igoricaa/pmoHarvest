@@ -66,10 +66,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No Harvest access token found' }, { status: 401 });
     }
 
-    const body: CreateExpenseInput = await request.json();
+    // Check if request contains FormData (multipart) or JSON
+    const contentType = request.headers.get('content-type') || '';
+    let expenseData: CreateExpenseInput;
+
+    if (contentType.includes('multipart/form-data')) {
+      // Handle FormData with receipt upload
+      const formData = await request.formData();
+      expenseData = {
+        project_id: Number(formData.get('project_id')),
+        expense_category_id: Number(formData.get('expense_category_id')),
+        spent_date: formData.get('spent_date') as string,
+        total_cost: formData.get('total_cost') ? Number(formData.get('total_cost')) : undefined,
+        notes: (formData.get('notes') as string) || undefined,
+        billable: formData.get('billable') === 'true' ? true : undefined,
+        receipt: formData.get('receipt') as File | undefined,
+      };
+    } else {
+      // Handle JSON
+      expenseData = await request.json();
+    }
 
     const harvestClient = createHarvestClient(accessToken);
-    const expense = await harvestClient.createExpense(body);
+    const expense = await harvestClient.createExpense(expenseData);
 
     return NextResponse.json(expense, { status: 201 });
   } catch (error) {
