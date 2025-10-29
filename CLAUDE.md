@@ -103,6 +103,7 @@ createHarvestClient(accessToken: string): HarvestClient
 - `Authorization: Bearer ${accessToken}` (user-specific)
 - `Harvest-Account-ID: ${process.env.HARVEST_ACCOUNT_ID}` (shared org ID)
 - Error interceptor → `HarvestAPIError`
+- Supports file uploads via multipart/form-data (receipt attachments)
 
 ### React Query Patterns
 
@@ -225,6 +226,8 @@ UPLOADTHING_APP_ID=              # Receipt uploads
 7. [src/components/app-sidebar.tsx](src/components/app-sidebar.tsx) - Sidebar navigation
 8. [src/components/time-entry-modal.tsx](src/components/time-entry-modal.tsx) - Time entry modal
 9. [src/components/expense-modal.tsx](src/components/expense-modal.tsx) - Expense modal
+10. [src/components/expense-form.tsx](src/components/expense-form.tsx) - Reusable expense form
+11. [src/components/time-entry-form.tsx](src/components/time-entry-form.tsx) - Reusable time entry form
 
 ## Common Patterns
 
@@ -267,6 +270,39 @@ const [open, setOpen] = useState(false);
 ```
 
 See [TimeEntryModal](src/components/time-entry-modal.tsx) and [ExpenseModal](src/components/expense-modal.tsx)
+
+### Reusable Form Components
+
+**Pattern**: Extract complex forms into reusable components for modals and inline pages.
+
+**Benefits**:
+- Single source of truth (update once)
+- Consistent validation and behavior
+- Easier testing and maintenance
+- Smaller modal files (~90% size reduction)
+
+**Example Components**:
+
+#### ExpenseForm
+[src/components/expense-form.tsx](src/components/expense-form.tsx)
+- Used by: ExpenseModal, expenses page
+- Features: Receipt upload (10MB max, JPEG/PNG/GIF/PDF), role-based projects, validation
+- Props: `onSuccess`, `onCancel`, `showCancelButton`, `submitButtonText`
+
+#### TimeEntryForm
+[src/components/time-entry-form.tsx](src/components/time-entry-form.tsx)
+- Used by: TimeEntryModal, time entries page
+- Features: Project-task cascade, role-based projects, hours validation (0-24)
+- Props: `onSuccess`, `onCancel`, `showCancelButton`, `submitButtonText`
+
+**Usage**:
+```typescript
+// Modal wrapper
+<ExpenseModal open={open} onOpenChange={setOpen} />
+
+// Inline usage
+<ExpenseForm showCancelButton={false} />
+```
 
 ## Multi-User Architecture
 

@@ -2,6 +2,24 @@
 
 Potential features and improvements for future development.
 
+## Completed
+
+### Expense Receipt Upload ✅
+- ✅ Native HTML5 file input (no external dependencies)
+- ✅ Client-side validation (10MB max, JPEG/PNG/GIF/PDF)
+- ✅ Direct upload to Harvest API via multipart/form-data
+- ✅ Receipt display in expenses table (clickable to view)
+- ✅ Works in both modal and inline form
+
+### Form Component Refactoring ✅
+- ✅ Extracted `ExpenseForm` component (used by modal + page)
+- ✅ Extracted `TimeEntryForm` component (used by modal + page)
+- ✅ ~500 lines of duplicated code eliminated
+- ✅ Modals reduced from ~400 lines to ~35 lines each (90% reduction)
+- ✅ Single source of truth for form logic and validation
+
+---
+
 ## Phase 1: Admin Features
 
 ### User Management
