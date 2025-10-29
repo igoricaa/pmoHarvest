@@ -39,19 +39,3 @@ export interface HarvestUser {
   costRate?: number;
   permissions?: HarvestPermissions;
 }
-
-/**
- * Extended session type with Harvest user data
- */
-export interface Session {
-  user: HarvestUser;
-  session: {
-    id: string;
-    userId: string;
-    expiresAt: Date;
-    ipAddress?: string;
-    userAgent?: string;
-    createdAt: Date;
-    updatedAt: Date;
-  };
-}

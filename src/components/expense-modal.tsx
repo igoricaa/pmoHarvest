@@ -34,7 +34,13 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
-import { useCreateExpense, useProjects, useExpenseCategories } from '@/hooks/use-harvest';
+import {
+  useCreateExpense,
+  useProjects,
+  useUserProjectAssignments,
+  useExpenseCategories,
+} from '@/hooks/use-harvest';
+import { useSession } from '@/lib/auth-client';
 import { toast } from 'sonner';
 
 const expenseSchema = z.object({
@@ -65,7 +71,24 @@ interface ExpenseModalProps {
 }
 
 export function ExpenseModal({ open, onOpenChange }: ExpenseModalProps) {
-  const { data: projectsData, isLoading: isLoadingProjects } = useProjects();
+  const { data: session } = useSession();
+
+  // Use appropriate endpoint based on user role
+  const isAdminOrManager = session?.user?.accessRoles?.some(
+    role => role === 'administrator' || role === 'manager'
+  );
+
+  const { data: allProjectsData, isLoading: isLoadingAllProjects } = useProjects({
+    enabled: !!session && isAdminOrManager,
+  });
+  const { data: userProjectsData, isLoading: isLoadingUserProjects } = useUserProjectAssignments({
+    enabled: !!session && !isAdminOrManager,
+  });
+
+  // Use all projects for admins/managers, user projects for members
+  const projectsData = isAdminOrManager ? allProjectsData : userProjectsData;
+  const isLoadingProjects = isAdminOrManager ? isLoadingAllProjects : isLoadingUserProjects;
+
   const { data: categoriesData, isLoading: isLoadingCategories } = useExpenseCategories();
 
   const createMutation = useCreateExpense();
@@ -293,7 +316,11 @@ export function ExpenseModal({ open, onOpenChange }: ExpenseModalProps) {
                 <FormItem>
                   <FormLabel>Notes (optional)</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Describe the expense..." className="resize-none" {...field} />
+                    <Textarea
+                      placeholder="Describe the expense..."
+                      className="resize-none"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

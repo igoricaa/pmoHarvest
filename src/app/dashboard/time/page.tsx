@@ -5,7 +5,7 @@ import { format } from 'date-fns';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { CalendarIcon, Loader2, Trash2, Pencil } from 'lucide-react';
+import { CalendarIcon, Loader2, Trash2, Pencil, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -33,8 +33,10 @@ import {
   useCreateTimeEntry,
   useDeleteTimeEntry,
   useProjects,
+  useUserProjectAssignments,
   useTaskAssignments,
 } from '@/hooks/use-harvest';
+import { useSession } from '@/lib/auth-client';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -71,14 +73,32 @@ type TimeEntryFormData = z.infer<typeof timeEntrySchema>;
 export default function TimeEntriesPage() {
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
   const [showForm, setShowForm] = useState(true);
+  const { data: session } = useSession();
 
   // Get data from last 30 days
   const from = format(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd');
   const to = format(new Date(), 'yyyy-MM-dd');
 
-  const { data: timeEntriesData, isLoading: isLoadingEntries } = useTimeEntries({ from, to });
-  const { data: projectsData, isLoading: isLoadingProjects } = useProjects();
-  const { data: tasksData, isLoading: isLoadingTasks } = useTaskAssignments(selectedProjectId);
+  // Use appropriate endpoint based on user role
+  const isAdminOrManager = session?.user?.accessRoles?.some(
+    role => role === 'administrator' || role === 'manager'
+  );
+
+  const { data: timeEntriesData, isLoading: isLoadingEntries, refetch: refetchTimeEntries, isFetching: isFetchingTimeEntries } = useTimeEntries({ from, to });
+  const { data: allProjectsData, isLoading: isLoadingAllProjects } = useProjects({
+    enabled: !!session && isAdminOrManager,
+  });
+  const { data: userProjectsData, isLoading: isLoadingUserProjects } = useUserProjectAssignments({
+    enabled: !!session && !isAdminOrManager,
+  });
+
+  // Use all projects for admins/managers, user projects for members
+  const projectsData = isAdminOrManager ? allProjectsData : userProjectsData;
+  const isLoadingProjects = isAdminOrManager ? isLoadingAllProjects : isLoadingUserProjects;
+
+  const { data: tasksData, isLoading: isLoadingTasks } = useTaskAssignments(selectedProjectId, {
+    isAdminOrManager,
+  });
 
   const createMutation = useCreateTimeEntry();
   const deleteMutation = useDeleteTimeEntry();
@@ -147,9 +167,28 @@ export default function TimeEntriesPage() {
           <h1 className="text-3xl font-bold tracking-tight">Time Entries</h1>
           <p className="text-muted-foreground">Log your hours and track your time</p>
         </div>
-        <Button variant={showForm ? 'outline' : 'default'} onClick={() => setShowForm(!showForm)}>
-          {showForm ? 'Hide Form' : 'Log Time'}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              refetchTimeEntries().then((result) => {
+                if (result.isError) {
+                  toast.error('Failed to refresh time entries');
+                } else {
+                  toast.success('Time entries refreshed');
+                }
+              });
+            }}
+            disabled={isFetchingTimeEntries}
+          >
+            <RefreshCw className={cn("mr-2 h-4 w-4", isFetchingTimeEntries && "animate-spin")} />
+            {isFetchingTimeEntries ? 'Refreshing...' : 'Refresh'}
+          </Button>
+          <Button variant={showForm ? 'outline' : 'default'} onClick={() => setShowForm(!showForm)}>
+            {showForm ? 'Hide Form' : 'Log Time'}
+          </Button>
+        </div>
       </div>
 
       {showForm && (
@@ -400,6 +439,7 @@ export default function TimeEntriesPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Date</TableHead>
+                    <TableHead>Member</TableHead>
                     <TableHead>Project</TableHead>
                     <TableHead>Task</TableHead>
                     <TableHead>Hours</TableHead>
@@ -411,6 +451,7 @@ export default function TimeEntriesPage() {
                   {timeEntriesData?.time_entries.map(entry => (
                     <TableRow key={entry.id}>
                       <TableCell>{format(new Date(entry.spent_date), 'PP')}</TableCell>
+                      <TableCell>{entry.user.name}</TableCell>
                       <TableCell className="font-medium">{entry.project.name}</TableCell>
                       <TableCell>{entry.task.name}</TableCell>
                       <TableCell>

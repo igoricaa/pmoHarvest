@@ -131,6 +131,62 @@ harvestKeys = {
 
 **Mutations**: Invalidate related queries in `onSuccess`
 
+### Role-Based Data Access
+
+**Harvest API Permissions**:
+
+| Endpoint | Admin/Manager | Member |
+|----------|---------------|--------|
+| `/projects` | ✅ | ❌ 403 |
+| `/projects/{id}/task_assignments` | ✅ | ❌ 403 |
+| `/users/me/project_assignments` | ✅ | ✅ |
+| `/time_entries` | ✅ (all) | ✅ (own) |
+| `/expenses` | ✅ (all) | ✅ (own) |
+
+**App Endpoints** (internal API routes):
+- `/api/harvest/projects` → `/projects` (admin/manager only)
+- `/api/harvest/user-project-assignments` → `/users/me/project_assignments` (all users)
+- `/api/harvest/projects/{id}/tasks` → `/projects/{id}/task_assignments` (admin/manager only)
+- `/api/harvest/user-task-assignments?projectId={id}` → `/users/me/project_assignments` (all users)
+
+**Conditional Query Pattern**:
+
+```typescript
+const { data: session } = useSession();
+
+// Compute role (undefined on first render until session loads)
+const isAdminOrManager = session?.user?.accessRoles?.some(
+  role => role === 'administrator' || role === 'manager'
+);
+
+// CRITICAL: Use !!session && to prevent query execution before session loads
+const { data: allProjectsData } = useProjects({
+  enabled: !!session && isAdminOrManager, // Waits for session, then checks role
+});
+
+const { data: userProjectsData } = useUserProjectAssignments({
+  enabled: !!session && !isAdminOrManager,
+});
+
+// Use role-appropriate data
+const projectsData = isAdminOrManager ? allProjectsData : userProjectsData;
+```
+
+**Why `!!session &&` is Required**:
+
+```typescript
+// ❌ WRONG - Causes 403 errors for members
+enabled: isAdminOrManager  // undefined on first render → truthy → query runs immediately!
+
+// ✅ CORRECT - Waits for session to load
+enabled: !!session && isAdminOrManager  // false until session loads
+```
+
+**TanStack Query `enabled` Behavior**:
+- `undefined` → Query runs (treated as truthy!)
+- `false` → Query disabled
+- `!!session &&` → Ensures explicit `false` until session loads
+
 ### Token Refresh
 
 Access tokens expire after 14 days. Auto-refresh via:

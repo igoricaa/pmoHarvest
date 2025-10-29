@@ -37,8 +37,10 @@ import { cn } from '@/lib/utils';
 import {
   useCreateTimeEntry,
   useProjects,
+  useUserProjectAssignments,
   useTaskAssignments,
 } from '@/hooks/use-harvest';
+import { useSession } from '@/lib/auth-client';
 import { toast } from 'sonner';
 
 const timeEntrySchema = z.object({
@@ -70,9 +72,27 @@ interface TimeEntryModalProps {
 
 export function TimeEntryModal({ open, onOpenChange }: TimeEntryModalProps) {
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
+  const { data: session } = useSession();
 
-  const { data: projectsData, isLoading: isLoadingProjects } = useProjects();
-  const { data: tasksData, isLoading: isLoadingTasks } = useTaskAssignments(selectedProjectId);
+  // Use appropriate endpoint based on user role
+  const isAdminOrManager = session?.user?.accessRoles?.some(
+    role => role === 'administrator' || role === 'manager'
+  );
+
+  const { data: allProjectsData, isLoading: isLoadingAllProjects } = useProjects({
+    enabled: !!session && isAdminOrManager,
+  });
+  const { data: userProjectsData, isLoading: isLoadingUserProjects } = useUserProjectAssignments({
+    enabled: !!session && !isAdminOrManager,
+  });
+
+  // Use all projects for admins/managers, user projects for members
+  const projectsData = isAdminOrManager ? allProjectsData : userProjectsData;
+  const isLoadingProjects = isAdminOrManager ? isLoadingAllProjects : isLoadingUserProjects;
+
+  const { data: tasksData, isLoading: isLoadingTasks } = useTaskAssignments(selectedProjectId, {
+    isAdminOrManager,
+  });
 
   const createMutation = useCreateTimeEntry();
 

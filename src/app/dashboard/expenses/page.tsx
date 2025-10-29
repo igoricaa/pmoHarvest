@@ -5,7 +5,7 @@ import { format } from 'date-fns';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { CalendarIcon, Loader2, Trash2, DollarSign } from 'lucide-react';
+import { CalendarIcon, Loader2, Trash2, DollarSign, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -33,8 +33,10 @@ import {
   useCreateExpense,
   useDeleteExpense,
   useProjects,
+  useUserProjectAssignments,
   useExpenseCategories,
 } from '@/hooks/use-harvest';
+import { useSession } from '@/lib/auth-client';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -70,13 +72,29 @@ type ExpenseFormData = z.infer<typeof expenseSchema>;
 
 export default function ExpensesPage() {
   const [showForm, setShowForm] = useState(true);
+  const { data: session } = useSession();
 
   // Get data from last 30 days
   const from = format(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd');
   const to = format(new Date(), 'yyyy-MM-dd');
 
-  const { data: expensesData, isLoading: isLoadingExpenses } = useExpenses({ from, to });
-  const { data: projectsData, isLoading: isLoadingProjects } = useProjects();
+  // Use appropriate endpoint based on user role
+  const isAdminOrManager = session?.user?.accessRoles?.some(
+    role => role === 'administrator' || role === 'manager'
+  );
+
+  const { data: expensesData, isLoading: isLoadingExpenses, refetch: refetchExpenses, isFetching: isFetchingExpenses } = useExpenses({ from, to });
+  const { data: allProjectsData, isLoading: isLoadingAllProjects } = useProjects({
+    enabled: !!session && isAdminOrManager,
+  });
+  const { data: userProjectsData, isLoading: isLoadingUserProjects } = useUserProjectAssignments({
+    enabled: !!session && !isAdminOrManager,
+  });
+
+  // Use all projects for admins/managers, user projects for members
+  const projectsData = isAdminOrManager ? allProjectsData : userProjectsData;
+  const isLoadingProjects = isAdminOrManager ? isLoadingAllProjects : isLoadingUserProjects;
+
   const { data: categoriesData, isLoading: isLoadingCategories } = useExpenseCategories();
 
   const createMutation = useCreateExpense();
@@ -137,9 +155,28 @@ export default function ExpensesPage() {
           <h1 className="text-3xl font-bold tracking-tight">Expenses</h1>
           <p className="text-muted-foreground">Submit and track your expenses</p>
         </div>
-        <Button variant={showForm ? 'outline' : 'default'} onClick={() => setShowForm(!showForm)}>
-          {showForm ? 'Hide Form' : 'Add Expense'}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              refetchExpenses().then((result) => {
+                if (result.isError) {
+                  toast.error('Failed to refresh expenses');
+                } else {
+                  toast.success('Expenses refreshed');
+                }
+              });
+            }}
+            disabled={isFetchingExpenses}
+          >
+            <RefreshCw className={cn("mr-2 h-4 w-4", isFetchingExpenses && "animate-spin")} />
+            {isFetchingExpenses ? 'Refreshing...' : 'Refresh'}
+          </Button>
+          <Button variant={showForm ? 'outline' : 'default'} onClick={() => setShowForm(!showForm)}>
+            {showForm ? 'Hide Form' : 'Add Expense'}
+          </Button>
+        </div>
       </div>
 
       {showForm && (
@@ -390,6 +427,7 @@ export default function ExpensesPage() {
                     <TableHead>Project</TableHead>
                     <TableHead>Category</TableHead>
                     <TableHead>Amount</TableHead>
+                    <TableHead>Member</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Notes</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -404,6 +442,7 @@ export default function ExpensesPage() {
                       <TableCell>
                         <Badge variant="secondary">${expense.total_cost.toFixed(2)}</Badge>
                       </TableCell>
+                      <TableCell>{expense.user.name}</TableCell>
                       <TableCell>
                         <Badge
                           variant={

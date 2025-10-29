@@ -153,13 +153,15 @@ export const auth = betterAuth({
         harvestRoles?: string;
       };
 
-      const accessRoles = userWithFields.accessRoles ? JSON.parse(userWithFields.accessRoles) : [];
-      const harvestRoles = userWithFields.harvestRoles
+      const accessRoles: string[] = userWithFields.accessRoles
+        ? JSON.parse(userWithFields.accessRoles)
+        : [];
+      const harvestRoles: string[] = userWithFields.harvestRoles
         ? JSON.parse(userWithFields.harvestRoles)
         : [];
 
       // Determine primary role
-      const primaryRole = accessRoles[0] || 'member';
+      const primaryRole: string = accessRoles[0] || 'member';
 
       // Define permissions based on Harvest access roles
       const permissions = getPermissionsForRole(primaryRole);
@@ -167,6 +169,7 @@ export const auth = betterAuth({
       return {
         user: {
           ...user,
+          harvestUserId: (user as any).harvestUserId, // Explicitly include for TypeScript
           accessRoles,
           harvestRoles,
           primaryRole,
@@ -213,7 +216,3 @@ function getPermissionsForRole(role: string) {
 
   return permissions;
 }
-
-// Type exports for client
-// Note: Custom Session type is defined in @/types/auth to include Harvest-specific fields
-export type { Session } from '@/types/auth';

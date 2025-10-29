@@ -123,9 +123,9 @@ export class HarvestClient {
     return response.data;
   }
 
-  async getUserProjectAssignments(userId: number): Promise<HarvestProjectResponse> {
+  async getCurrentUserProjectAssignments(): Promise<HarvestProjectResponse> {
     const response = await this.client.get<HarvestProjectResponse>(
-      `/users/${userId}/project_assignments`
+      `/users/me/project_assignments`
     );
     return response.data;
   }
@@ -143,6 +143,47 @@ export class HarvestClient {
       { params }
     );
     return response.data;
+  }
+
+  async getCurrentUserTaskAssignments(projectId: number): Promise<HarvestTaskAssignmentResponse> {
+    // Fetch user's project assignments which include task_assignments
+    const response = await this.client.get<any>(`/users/me/project_assignments`);
+
+    // Find the specific project assignment
+    const projectAssignment = response.data.project_assignments?.find(
+      (pa: any) => pa.project.id === projectId
+    );
+
+    if (!projectAssignment) {
+      // Return empty task assignments if project not found
+      return {
+        task_assignments: [],
+        per_page: 0,
+        total_pages: 0,
+        total_entries: 0,
+        next_page: null,
+        previous_page: null,
+        page: 1,
+        links: {
+          first: '',
+          next: null,
+          previous: null,
+          last: '',
+        },
+      };
+    }
+
+    // Transform to match HarvestTaskAssignmentResponse structure
+    return {
+      task_assignments: projectAssignment.task_assignments || [],
+      per_page: response.data.per_page,
+      total_pages: response.data.total_pages,
+      total_entries: projectAssignment.task_assignments?.length || 0,
+      next_page: null,
+      previous_page: null,
+      page: 1,
+      links: response.data.links,
+    };
   }
 
   // ============================================================================

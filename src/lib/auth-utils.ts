@@ -4,7 +4,7 @@
  */
 
 import { authClient } from './auth-client';
-import type { Session } from '@/types/auth';
+import type { Session } from './auth-client';
 
 /**
  * Refresh the user's Harvest access token
