@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { format, startOfWeek, startOfMonth, endOfWeek, endOfMonth } from 'date-fns';
 import { Clock, Receipt, TrendingUp, Activity } from 'lucide-react';
 import Link from 'next/link';
@@ -9,8 +10,12 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { TimeEntryModal } from '@/components/time-entry-modal';
+import { ExpenseModal } from '@/components/expense-modal';
 
 export default function DashboardPage() {
+  const [timeModalOpen, setTimeModalOpen] = useState(false);
+  const [expenseModalOpen, setExpenseModalOpen] = useState(false);
   const today = new Date();
 
   // Week calculations
@@ -131,20 +136,20 @@ export default function DashboardPage() {
           <CardDescription>Common tasks to get you started</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-4">
-          <Button asChild>
-            <Link href="/dashboard/time">
-              <Clock className="mr-2 h-4 w-4" />
-              Log Time
-            </Link>
+          <Button onClick={() => setTimeModalOpen(true)}>
+            <Clock className="mr-2 h-4 w-4" />
+            Log Time
           </Button>
-          <Button asChild variant="outline">
-            <Link href="/dashboard/expenses">
-              <Receipt className="mr-2 h-4 w-4" />
-              Add Expense
-            </Link>
+          <Button variant="outline" onClick={() => setExpenseModalOpen(true)}>
+            <Receipt className="mr-2 h-4 w-4" />
+            Add Expense
           </Button>
         </CardContent>
       </Card>
+
+      {/* Modals */}
+      <TimeEntryModal open={timeModalOpen} onOpenChange={setTimeModalOpen} />
+      <ExpenseModal open={expenseModalOpen} onOpenChange={setExpenseModalOpen} />
 
       {/* Recent Activity */}
       <Card>

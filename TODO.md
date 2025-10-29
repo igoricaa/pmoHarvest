@@ -43,18 +43,6 @@ Potential features and improvements for future development.
 - [ ] Custom date range exports
 - [ ] PDF/Excel export
 
-## Phase 4: Collaboration
-
-- [ ] Team calendar view
-- [ ] Project comments/notes
-- [ ] @mentions and notifications
-
-## Phase 5: Automation
-
-- [ ] Email reminders (daily time entry)
-- [ ] Weekly summary emails
-- [ ] Budget warnings
-- [ ] Slack integration (optional)
 
 ## Quick Wins
 
@@ -68,12 +56,6 @@ These can be implemented quickly:
 
 ## Technical Improvements
 
-- [ ] Unit tests (Jest + React Testing Library)
-- [ ] E2E tests (Playwright)
-- [ ] CI/CD pipeline
-- [ ] TypeScript strict mode
-- [ ] API documentation (OpenAPI)
-- [ ] Accessibility audit (WCAG 2.1 AA)
 - [ ] Performance optimization (Redis caching)
 - [ ] Error tracking (Sentry)
 

@@ -54,9 +54,18 @@ session.user = {
 
 Access: `useSession()` from `@/lib/auth-client`
 
+### Layout Structure
+
+**Dashboard**: [src/app/dashboard/layout.tsx](src/app/dashboard/layout.tsx)
+
+- Collapsible sidebar navigation (shadcn/ui Sidebar)
+- Keyboard shortcut: Cmd/Ctrl+B to toggle
+- Mobile responsive (opens as sheet)
+- Component: [AppSidebar](src/components/app-sidebar.tsx)
+
 ### Proxy (Authentication)
 
-**File**: [src/proxy.ts](src/proxy.ts) (renamed from `middleware.ts` in Next.js 16)
+**File**: [src/proxy.ts](src/proxy.ts)
 
 - Checks `better-auth.session_token` cookie
 - Redirects to `/sign-in` if missing
@@ -157,6 +166,9 @@ UPLOADTHING_APP_ID=              # Receipt uploads
 4. [src/app/api/harvest/time-entries/route.ts](src/app/api/harvest/time-entries/route.ts) - API pattern reference
 5. [src/hooks/use-harvest.ts](src/hooks/use-harvest.ts) - React Query hooks
 6. [src/lib/auth-utils.ts](src/lib/auth-utils.ts) - Auth utilities
+7. [src/components/app-sidebar.tsx](src/components/app-sidebar.tsx) - Sidebar navigation
+8. [src/components/time-entry-modal.tsx](src/components/time-entry-modal.tsx) - Time entry modal
+9. [src/components/expense-modal.tsx](src/components/expense-modal.tsx) - Expense modal
 
 ## Common Patterns
 
@@ -182,6 +194,24 @@ const isAdmin = session?.user?.accessRoles?.includes('administrator');
 const canApprove = session?.user?.permissions?.expenses?.includes('approve');
 ```
 
+### Modal Pattern
+
+Reusable modals with Dialog component:
+
+```typescript
+// Component
+export function MyModal({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+  return <Dialog open={open} onOpenChange={onOpenChange}>...</Dialog>
+}
+
+// Usage
+const [open, setOpen] = useState(false);
+<Button onClick={() => setOpen(true)}>Open</Button>
+<MyModal open={open} onOpenChange={setOpen} />
+```
+
+See [TimeEntryModal](src/components/time-entry-modal.tsx) and [ExpenseModal](src/components/expense-modal.tsx)
+
 ## Multi-User Architecture
 
 Each consultant has:
@@ -197,23 +227,11 @@ Shared:
 - OAuth client credentials
 - Database (separate rows per user)
 
-## Recent Changes
-
-### Next.js 16 Upgrade (2025-10-29)
-
-- Upgraded: Next.js 15.5.4 → 16.0.1
-- Turbopack now default (removed `--turbopack` flags)
-- Middleware renamed to Proxy:
-  - File: `src/middleware.ts` → `src/proxy.ts`
-  - Export: `middleware` → `proxy`
-- TypeScript config auto-updated for React 19
-
 ## Gotchas
 
-1. **Access Token**: Always user-specific OAuth token, never use shared PAT
+1. **Access Token**: Always user-specific OAuth token, never shared PAT
 2. **Account ID**: Shared org ID from env var
 3. **Token Expiration**: 14 days, auto-refresh on 401
-4. **Proxy Naming**: Use `proxy` (not `middleware`) in Next.js 16+
-5. **Session Cookie**: Different names for HTTP vs HTTPS (`better-auth.session_token` vs `__Secure-better-auth.session_token`)
+4. **Proxy File**: Named `src/proxy.ts` with `proxy` export (Next.js 16)
+5. **Session Cookie**: HTTP uses `better-auth.session_token`, HTTPS uses `__Secure-` prefix
 6. **Data Isolation**: Enforced by Harvest API via user-specific tokens
-7. **Turbopack**: Default in Next.js 16, no flag needed
