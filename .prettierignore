@@ -1,0 +1,33 @@
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+
+# Build outputs
+.next
+out
+dist
+build
+
+# Cache
+.turbo
+.cache
+
+# Env files
+.env
+.env.*
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+
+# Database
+*.db
+*.sqlite
+
+# Lock files
+pnpm-lock.yaml
+package-lock.json
+yarn.lock

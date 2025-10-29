@@ -4,13 +4,12 @@ Internal time and expense tracking portal for PMO Hive consultants, integrating 
 
 ## Tech Stack
 
-- **Framework**: Next.js 15 (App Router, Turbopack)
-- **Auth**: Better Auth + Harvest OAuth (SSO)
-- **Database**: PostgreSQL (Neon) - OAuth tokens only
-- **State**: TanStack React Query
-- **UI**: shadcn/ui + Tailwind CSS v4
-- **Forms**: React Hook Form + Zod
-- **Linting**: Biome
+- **Next.js 16** (App Router, Turbopack)
+- **Better Auth** (Harvest OAuth SSO)
+- **PostgreSQL** (Neon) - OAuth tokens only
+- **TanStack Query** - server state
+- **shadcn/ui + Tailwind v4** - UI
+- **React Hook Form + Zod** - forms
 
 ## Quick Start
 
@@ -18,20 +17,17 @@ Internal time and expense tracking portal for PMO Hive consultants, integrating 
 # Install
 pnpm install
 
-# Setup environment (see .env.local.example)
+# Setup environment
 cp .env.local.example .env.local
-
-# Configure:
-# - Better Auth secret
-# - Neon PostgreSQL database
-# - Harvest OAuth app credentials
-# - Harvest Account ID
+# Configure: Better Auth secret, Neon PostgreSQL, Harvest OAuth credentials
 
 # Run
 pnpm dev
 ```
 
-## Environment Variables
+Open [http://localhost:3000](http://localhost:3000) → Sign in with Harvest
+
+## Environment Setup
 
 ```bash
 BETTER_AUTH_SECRET=              # openssl rand -base64 32
@@ -45,11 +41,12 @@ HARVEST_ACCOUNT_ID=              # From id.getharvest.com/developers
 ## Architecture
 
 - **Auth**: Harvest OAuth → Better Auth → PostgreSQL (tokens only)
-- **User data**: Sourced from Harvest API, not stored locally
-- **API Routes**: Next.js routes proxy to Harvest API with user-specific OAuth tokens
-- **Sessions**: Include Harvest roles (`administrator`, `manager`, `member`) and permissions
+- **User Data**: Sourced from Harvest API (not stored locally)
+- **Multi-User**: Each consultant has their own OAuth token
+- **API Routes**: Proxy to Harvest API with user-specific tokens
+- **Sessions**: Include Harvest roles and permissions
 
-See [CLAUDE.md](CLAUDE.md) for detailed architecture and [SETUP.md](SETUP.md) for setup instructions.
+See [CLAUDE.md](CLAUDE.md) for technical details and [SETUP.md](SETUP.md) for setup guide.
 
 ## Commands
 
@@ -57,8 +54,6 @@ See [CLAUDE.md](CLAUDE.md) for detailed architecture and [SETUP.md](SETUP.md) fo
 pnpm dev        # Dev server
 pnpm build      # Production build
 pnpm start      # Production server
-pnpm lint       # Biome linter
-pnpm format     # Biome formatter
 ```
 
 ## License

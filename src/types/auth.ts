@@ -2,7 +2,7 @@
  * Custom type definitions for Better Auth with Harvest integration
  */
 
-import type { Session as BetterAuthSession } from "better-auth/types";
+import type { Session as BetterAuthSession } from 'better-auth/types';
 
 /**
  * Harvest-specific permissions structure

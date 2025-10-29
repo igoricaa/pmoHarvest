@@ -3,8 +3,8 @@
  * Helper functions for managing auth state and token refresh
  */
 
-import { authClient } from "./auth-client";
-import type { Session } from "@/types/auth";
+import { authClient } from './auth-client';
+import type { Session } from '@/types/auth';
 
 /**
  * Refresh the user's Harvest access token
@@ -13,9 +13,9 @@ import type { Session } from "@/types/auth";
  */
 export async function refreshUserHarvestToken(): Promise<string | null> {
   try {
-    const response = await fetch("/api/auth/refresh-harvest-token", {
-      method: "POST",
-      credentials: "include",
+    const response = await fetch('/api/auth/refresh-harvest-token', {
+      method: 'POST',
+      credentials: 'include',
     });
 
     if (!response.ok) {
@@ -23,20 +23,20 @@ export async function refreshUserHarvestToken(): Promise<string | null> {
 
       // If requiresReauth is true, user needs to sign in again
       if (error.requiresReauth) {
-        console.warn("Refresh token expired - user needs to re-authenticate");
+        console.warn('Refresh token expired - user needs to re-authenticate');
         // Redirect to sign-in
-        window.location.href = "/sign-in?error=session_expired";
+        window.location.href = '/sign-in?error=session_expired';
         return null;
       }
 
-      console.error("Token refresh failed:", error);
+      console.error('Token refresh failed:', error);
       return null;
     }
 
     const data = await response.json();
     return data.accessToken;
   } catch (error) {
-    console.error("Error refreshing token:", error);
+    console.error('Error refreshing token:', error);
     return null;
   }
 }

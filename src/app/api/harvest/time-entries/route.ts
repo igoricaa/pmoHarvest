@@ -26,10 +26,14 @@ export async function GET(request: NextRequest) {
       page: searchParams.get('page') ? Number(searchParams.get('page')) : undefined,
       per_page: searchParams.get('per_page') ? Number(searchParams.get('per_page')) : undefined,
       user_id: searchParams.get('user_id') ? Number(searchParams.get('user_id')) : undefined,
-      project_id: searchParams.get('project_id') ? Number(searchParams.get('project_id')) : undefined,
+      project_id: searchParams.get('project_id')
+        ? Number(searchParams.get('project_id'))
+        : undefined,
       from: searchParams.get('from') || undefined,
       to: searchParams.get('to') || undefined,
-      is_running: searchParams.get('is_running') ? searchParams.get('is_running') === 'true' : undefined,
+      is_running: searchParams.get('is_running')
+        ? searchParams.get('is_running') === 'true'
+        : undefined,
     };
 
     const harvestClient = createHarvestClient(accessToken);
@@ -40,7 +44,7 @@ export async function GET(request: NextRequest) {
     console.error('Error fetching time entries:', error);
     return NextResponse.json(
       { error: getErrorMessage(error, 'Failed to fetch time entries') },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -72,7 +76,7 @@ export async function POST(request: NextRequest) {
     console.error('Error creating time entry:', error);
     return NextResponse.json(
       { error: getErrorMessage(error, 'Failed to create time entry') },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

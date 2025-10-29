@@ -14,7 +14,7 @@ export function Providers({ children }: { children: ReactNode }) {
             retry: 1,
           },
         },
-      }),
+      })
   );
 
   return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;

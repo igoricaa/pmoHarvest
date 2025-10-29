@@ -29,7 +29,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     console.error('Error fetching expense:', error);
     return NextResponse.json(
       { error: getErrorMessage(error, 'Failed to fetch expense') },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -61,12 +61,15 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     console.error('Error updating expense:', error);
     return NextResponse.json(
       { error: getErrorMessage(error, 'Failed to update expense') },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     const session = await auth.api.getSession({ headers: request.headers });
     if (!session?.user) {
@@ -91,7 +94,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     console.error('Error deleting expense:', error);
     return NextResponse.json(
       { error: getErrorMessage(error, 'Failed to delete expense') },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

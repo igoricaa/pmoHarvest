@@ -9,12 +9,14 @@ import Link from 'next/link';
 const ERROR_MESSAGES: Record<string, { title: string; description: string; action?: string }> = {
   access_denied: {
     title: 'Access Denied',
-    description: 'You denied the authentication request. To use this portal, you need to authorize access to your Harvest account.',
+    description:
+      'You denied the authentication request. To use this portal, you need to authorize access to your Harvest account.',
     action: 'Please try signing in again and approve the access request.',
   },
   invalid_state: {
     title: 'Invalid State',
-    description: 'The authentication state was invalid. This may be due to an expired session or security issue.',
+    description:
+      'The authentication state was invalid. This may be due to an expired session or security issue.',
     action: 'Please try signing in again from the beginning.',
   },
   server_error: {
@@ -29,7 +31,8 @@ const ERROR_MESSAGES: Record<string, { title: string; description: string; actio
   },
   token_refresh_failed: {
     title: 'Token Refresh Failed',
-    description: 'We could not refresh your Harvest access token. Your refresh token may have expired.',
+    description:
+      'We could not refresh your Harvest access token. Your refresh token may have expired.',
     action: 'Please sign in again to get a new access token.',
   },
   no_harvest_account: {

@@ -16,10 +16,7 @@ import { account } from '../schema';
  * @param providerId - The OAuth provider ID (e.g., 'harvest')
  * @returns Account data or null if not found
  */
-export async function getAccountByUserIdAndProvider(
-  userId: string,
-  providerId: string
-) {
+export async function getAccountByUserIdAndProvider(userId: string, providerId: string) {
   const result = await db
     .select({
       refreshToken: account.refreshToken,

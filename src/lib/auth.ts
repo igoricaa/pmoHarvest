@@ -1,7 +1,7 @@
-import { betterAuth } from "better-auth";
-import { genericOAuth } from "better-auth/plugins";
-import { customSession } from "better-auth/plugins";
-import { Pool } from "pg";
+import { betterAuth } from 'better-auth';
+import { genericOAuth } from 'better-auth/plugins';
+import { customSession } from 'better-auth/plugins';
+import { Pool } from 'pg';
 
 // Initialize PostgreSQL connection (Neon or other Postgres provider)
 // This only stores OAuth tokens and sessions, NOT user data (that's in Harvest)
@@ -13,22 +13,20 @@ export const auth = betterAuth({
   database: pool,
 
   // Base URL for your app
-  baseURL: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+  baseURL: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
 
   // Trust proxy headers (for production behind reverse proxy)
-  trustedOrigins: process.env.NEXT_PUBLIC_APP_URL
-    ? [process.env.NEXT_PUBLIC_APP_URL]
-    : [],
+  trustedOrigins: process.env.NEXT_PUBLIC_APP_URL ? [process.env.NEXT_PUBLIC_APP_URL] : [],
 
   // Advanced cookie configuration for production
   advanced: {
-    cookiePrefix: "better-auth",
-    useSecureCookies: process.env.NODE_ENV === "production",
+    cookiePrefix: 'better-auth',
+    useSecureCookies: process.env.NODE_ENV === 'production',
     defaultCookieAttributes: {
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
       httpOnly: true,
-      path: "/",
+      path: '/',
     },
   },
 
@@ -46,40 +44,40 @@ export const auth = betterAuth({
   user: {
     additionalFields: {
       firstName: {
-        type: "string",
+        type: 'string',
         required: false,
       },
       lastName: {
-        type: "string",
+        type: 'string',
         required: false,
       },
       harvestUserId: {
-        type: "number",
+        type: 'number',
         required: false,
       },
       harvestRoles: {
-        type: "string",
+        type: 'string',
         required: false,
       },
       accessRoles: {
-        type: "string", // JSON string of array ['administrator', 'manager', 'member']
+        type: 'string', // JSON string of array ['administrator', 'manager', 'member']
         required: false,
       },
       isContractor: {
-        type: "boolean",
+        type: 'boolean',
         required: false,
         defaultValue: false,
       },
       weeklyCapacity: {
-        type: "number",
+        type: 'number',
         required: false,
       },
       defaultHourlyRate: {
-        type: "number",
+        type: 'number',
         required: false,
       },
       costRate: {
-        type: "number",
+        type: 'number',
         required: false,
       },
     },
@@ -90,31 +88,31 @@ export const auth = betterAuth({
     genericOAuth({
       config: [
         {
-          providerId: "harvest",
+          providerId: 'harvest',
           clientId: process.env.HARVEST_OAUTH_CLIENT_ID!,
           clientSecret: process.env.HARVEST_OAUTH_CLIENT_SECRET!,
-          authorizationUrl: "https://id.getharvest.com/oauth2/authorize",
-          tokenUrl: "https://id.getharvest.com/api/v2/oauth2/token",
-          userInfoUrl: "https://api.harvestapp.com/v2/users/me",
+          authorizationUrl: 'https://id.getharvest.com/oauth2/authorize',
+          tokenUrl: 'https://id.getharvest.com/api/v2/oauth2/token',
+          userInfoUrl: 'https://api.harvestapp.com/v2/users/me',
           // Harvest doesn't use explicit scopes - access is determined by user permissions in the account
           scopes: [],
           // Request offline access to ensure refresh token is issued
-          accessType: "offline",
+          accessType: 'offline',
           // Ensure consent prompt to get refresh token every time
-          prompt: "consent",
+          prompt: 'consent',
 
           // Custom function to fetch user info from Harvest
-          getUserInfo: async (tokens) => {
-            const response = await fetch("https://api.harvestapp.com/v2/users/me", {
+          getUserInfo: async tokens => {
+            const response = await fetch('https://api.harvestapp.com/v2/users/me', {
               headers: {
                 Authorization: `Bearer ${tokens.accessToken}`,
-                "Harvest-Account-Id": process.env.HARVEST_ACCOUNT_ID!,
-                "User-Agent": "PMO Harvest Portal (auth)",
+                'Harvest-Account-Id': process.env.HARVEST_ACCOUNT_ID!,
+                'User-Agent': 'PMO Harvest Portal (auth)',
               },
             });
 
             if (!response.ok) {
-              throw new Error("Failed to fetch user info from Harvest");
+              throw new Error('Failed to fetch user info from Harvest');
             }
 
             const profile = await response.json();
@@ -130,7 +128,7 @@ export const auth = betterAuth({
           },
 
           // Map Harvest profile to custom user fields
-          mapProfileToUser: (profile) => {
+          mapProfileToUser: profile => {
             return {
               firstName: profile.first_name,
               lastName: profile.last_name,
@@ -155,15 +153,13 @@ export const auth = betterAuth({
         harvestRoles?: string;
       };
 
-      const accessRoles = userWithFields.accessRoles
-        ? JSON.parse(userWithFields.accessRoles)
-        : [];
+      const accessRoles = userWithFields.accessRoles ? JSON.parse(userWithFields.accessRoles) : [];
       const harvestRoles = userWithFields.harvestRoles
         ? JSON.parse(userWithFields.harvestRoles)
         : [];
 
       // Determine primary role
-      const primaryRole = accessRoles[0] || "member";
+      const primaryRole = accessRoles[0] || 'member';
 
       // Define permissions based on Harvest access roles
       const permissions = getPermissionsForRole(primaryRole);
@@ -193,26 +189,26 @@ function getPermissionsForRole(role: string) {
   };
 
   // Member (Consultant) permissions
-  permissions.timeEntries = ["create", "read", "update", "delete"];
-  permissions.expenses = ["create", "read", "update", "delete"];
-  permissions.projects = ["read"];
-  permissions.reports = ["read"];
+  permissions.timeEntries = ['create', 'read', 'update', 'delete'];
+  permissions.expenses = ['create', 'read', 'update', 'delete'];
+  permissions.projects = ['read'];
+  permissions.reports = ['read'];
 
   // Manager permissions (inherit member + additional)
-  if (role === "manager") {
-    permissions.expenses.push("approve");
-    permissions.projects.push("manage");
-    permissions.users.push("read");
-    permissions.reports.push("export");
+  if (role === 'manager') {
+    permissions.expenses.push('approve');
+    permissions.projects.push('manage');
+    permissions.users.push('read');
+    permissions.reports.push('export');
   }
 
   // Administrator permissions (full access)
-  if (role === "administrator") {
-    permissions.timeEntries = ["create", "read", "update", "delete"];
-    permissions.expenses = ["create", "read", "update", "delete", "approve"];
-    permissions.projects = ["read", "manage"];
-    permissions.users = ["read", "manage"];
-    permissions.reports = ["read", "export"];
+  if (role === 'administrator') {
+    permissions.timeEntries = ['create', 'read', 'update', 'delete'];
+    permissions.expenses = ['create', 'read', 'update', 'delete', 'approve'];
+    permissions.projects = ['read', 'manage'];
+    permissions.users = ['read', 'manage'];
+    permissions.reports = ['read', 'export'];
   }
 
   return permissions;
@@ -220,4 +216,4 @@ function getPermissionsForRole(role: string) {
 
 // Type exports for client
 // Note: Custom Session type is defined in @/types/auth to include Harvest-specific fields
-export type { Session } from "@/types/auth";
+export type { Session } from '@/types/auth';

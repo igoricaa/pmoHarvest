@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
   try {
@@ -16,13 +16,13 @@ export async function GET(request: NextRequest) {
             name: session.user.name,
           }
         : null,
-      cookies: request.cookies.getAll().map((c) => ({
+      cookies: request.cookies.getAll().map(c => ({
         name: c.name,
         hasValue: !!c.value,
         valueLength: c.value?.length || 0,
       })),
       headers: {
-        cookie: request.headers.get("cookie") ? "present" : "missing",
+        cookie: request.headers.get('cookie') ? 'present' : 'missing',
       },
     });
   } catch (error: any) {

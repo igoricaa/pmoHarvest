@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
     console.error('Error fetching projects:', error);
     return NextResponse.json(
       { error: getErrorMessage(error, 'Failed to fetch projects') },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

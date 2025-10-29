@@ -30,7 +30,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     console.error('Error fetching task assignments:', error);
     return NextResponse.json(
       { error: getErrorMessage(error, 'Failed to fetch task assignments') },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

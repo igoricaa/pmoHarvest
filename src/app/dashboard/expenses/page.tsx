@@ -54,16 +54,15 @@ const expenseSchema = z.object({
     .string()
     .min(1, 'Amount is required')
     .refine(
-      (val) => {
+      val => {
         const num = Number.parseFloat(val);
         return !Number.isNaN(num) && num > 0;
       },
-      { message: 'Amount must be greater than 0' },
+      { message: 'Amount must be greater than 0' }
     )
-    .refine(
-      (val) => /^\d+(\.\d{1,2})?$/.test(val),
-      { message: 'Amount must be a valid number (e.g., 100 or 100.50)' },
-    ),
+    .refine(val => /^\d+(\.\d{1,2})?$/.test(val), {
+      message: 'Amount must be a valid number (e.g., 100 or 100.50)',
+    }),
   notes: z.string().optional(),
 });
 
@@ -138,10 +137,7 @@ export default function ExpensesPage() {
           <h1 className="text-3xl font-bold tracking-tight">Expenses</h1>
           <p className="text-muted-foreground">Submit and track your expenses</p>
         </div>
-        <Button
-          variant={showForm ? 'outline' : 'default'}
-          onClick={() => setShowForm(!showForm)}
-        >
+        <Button variant={showForm ? 'outline' : 'default'} onClick={() => setShowForm(!showForm)}>
           {showForm ? 'Hide Form' : 'Add Expense'}
         </Button>
       </div>
@@ -169,10 +165,14 @@ export default function ExpensesPage() {
                                 variant="outline"
                                 className={cn(
                                   'w-full pl-3 text-left font-normal',
-                                  !field.value && 'text-muted-foreground',
+                                  !field.value && 'text-muted-foreground'
                                 )}
                               >
-                                {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
+                                {field.value ? (
+                                  format(field.value, 'PPP')
+                                ) : (
+                                  <span>Pick a date</span>
+                                )}
                                 <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                               </Button>
                             </FormControl>
@@ -182,7 +182,7 @@ export default function ExpensesPage() {
                               mode="single"
                               selected={field.value}
                               onSelect={field.onChange}
-                              disabled={(date) => date > new Date() || date < new Date('1900-01-01')}
+                              disabled={date => date > new Date() || date < new Date('1900-01-01')}
                               initialFocus
                             />
                           </PopoverContent>
@@ -206,15 +206,19 @@ export default function ExpensesPage() {
                               placeholder="100.00"
                               className="pl-9"
                               {...field}
-                              onKeyDown={(e) => {
+                              onKeyDown={e => {
                                 // Allow: backspace, delete, tab, escape, enter, decimal point
                                 if (
                                   [46, 8, 9, 27, 13, 110, 190].indexOf(e.keyCode) !== -1 ||
                                   // Allow: Ctrl/Cmd+A, Ctrl/Cmd+C, Ctrl/Cmd+V, Ctrl/Cmd+X
-                                  (e.keyCode === 65 && (e.ctrlKey === true || e.metaKey === true)) ||
-                                  (e.keyCode === 67 && (e.ctrlKey === true || e.metaKey === true)) ||
-                                  (e.keyCode === 86 && (e.ctrlKey === true || e.metaKey === true)) ||
-                                  (e.keyCode === 88 && (e.ctrlKey === true || e.metaKey === true)) ||
+                                  (e.keyCode === 65 &&
+                                    (e.ctrlKey === true || e.metaKey === true)) ||
+                                  (e.keyCode === 67 &&
+                                    (e.ctrlKey === true || e.metaKey === true)) ||
+                                  (e.keyCode === 86 &&
+                                    (e.ctrlKey === true || e.metaKey === true)) ||
+                                  (e.keyCode === 88 &&
+                                    (e.ctrlKey === true || e.metaKey === true)) ||
                                   // Allow: home, end, left, right
                                   (e.keyCode >= 35 && e.keyCode <= 39)
                                 ) {
@@ -228,7 +232,7 @@ export default function ExpensesPage() {
                                   e.preventDefault();
                                 }
                               }}
-                              onChange={(e) => {
+                              onChange={e => {
                                 const value = e.target.value;
                                 // Allow empty string
                                 if (value === '') {
@@ -276,7 +280,7 @@ export default function ExpensesPage() {
                                 Loading projects...
                               </div>
                             ) : (
-                              projectsData?.projects.map((project) => (
+                              projectsData?.projects.map(project => (
                                 <SelectItem key={project.id} value={project.id.toString()}>
                                   {project.name}
                                 </SelectItem>
@@ -307,7 +311,7 @@ export default function ExpensesPage() {
                                 Loading categories...
                               </div>
                             ) : (
-                              categoriesData?.expense_categories.map((category) => (
+                              categoriesData?.expense_categories.map(category => (
                                 <SelectItem key={category.id} value={category.id.toString()}>
                                   {category.name}
                                 </SelectItem>
@@ -386,7 +390,7 @@ export default function ExpensesPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {expensesData?.expenses.map((expense) => (
+                  {expensesData?.expenses.map(expense => (
                     <TableRow key={expense.id}>
                       <TableCell>{format(new Date(expense.spent_date), 'PP')}</TableCell>
                       <TableCell className="font-medium">{expense.project.name}</TableCell>

@@ -31,7 +31,7 @@ export class HarvestAPIError extends Error {
   constructor(
     message: string,
     public statusCode: number,
-    public response?: unknown,
+    public response?: unknown
   ) {
     super(message);
     this.name = 'HarvestAPIError';
@@ -57,21 +57,19 @@ export class HarvestClient {
 
     // Add error interceptor
     this.client.interceptors.response.use(
-      (response) => response,
+      response => response,
       (error: AxiosError<any>) => {
         if (error.response) {
           // If we get a 401, the token might be expired
           // The calling code should handle token refresh and retry
           throw new HarvestAPIError(
-            error.response.data?.error_description ||
-              error.response.data?.message ||
-              error.message,
+            error.response.data?.error_description || error.response.data?.message || error.message,
             error.response.status,
-            error.response.data,
+            error.response.data
           );
         }
         throw new HarvestAPIError(error.message, 500);
-      },
+      }
     );
   }
 
@@ -127,7 +125,7 @@ export class HarvestClient {
 
   async getUserProjectAssignments(userId: number): Promise<HarvestProjectResponse> {
     const response = await this.client.get<HarvestProjectResponse>(
-      `/users/${userId}/project_assignments`,
+      `/users/${userId}/project_assignments`
     );
     return response.data;
   }
@@ -138,11 +136,11 @@ export class HarvestClient {
 
   async getTaskAssignments(
     projectId: number,
-    params?: { is_active?: boolean },
+    params?: { is_active?: boolean }
   ): Promise<HarvestTaskAssignmentResponse> {
     const response = await this.client.get<HarvestTaskAssignmentResponse>(
       `/projects/${projectId}/task_assignments`,
-      { params },
+      { params }
     );
     return response.data;
   }
@@ -170,11 +168,11 @@ export class HarvestClient {
 
   async updateTimeEntry(
     timeEntryId: number,
-    input: UpdateTimeEntryInput,
+    input: UpdateTimeEntryInput
   ): Promise<HarvestTimeEntry> {
     const response = await this.client.patch<HarvestTimeEntry>(
       `/time_entries/${timeEntryId}`,
-      input,
+      input
     );
     return response.data;
   }
@@ -185,7 +183,7 @@ export class HarvestClient {
 
   async restartTimeEntry(timeEntryId: number): Promise<HarvestTimeEntry> {
     const response = await this.client.patch<HarvestTimeEntry>(
-      `/time_entries/${timeEntryId}/restart`,
+      `/time_entries/${timeEntryId}/restart`
     );
     return response.data;
   }
@@ -222,7 +220,8 @@ export class HarvestClient {
       formData.append('spent_date', input.spent_date);
 
       if (input.units !== undefined) formData.append('units', input.units.toString());
-      if (input.total_cost !== undefined) formData.append('total_cost', input.total_cost.toString());
+      if (input.total_cost !== undefined)
+        formData.append('total_cost', input.total_cost.toString());
       if (input.notes) formData.append('notes', input.notes);
       if (input.billable !== undefined) formData.append('billable', input.billable.toString());
 
@@ -252,7 +251,8 @@ export class HarvestClient {
         formData.append('expense_category_id', input.expense_category_id.toString());
       if (input.spent_date) formData.append('spent_date', input.spent_date);
       if (input.units !== undefined) formData.append('units', input.units.toString());
-      if (input.total_cost !== undefined) formData.append('total_cost', input.total_cost.toString());
+      if (input.total_cost !== undefined)
+        formData.append('total_cost', input.total_cost.toString());
       if (input.notes !== undefined) formData.append('notes', input.notes);
       if (input.billable !== undefined) formData.append('billable', input.billable.toString());
 
@@ -260,12 +260,16 @@ export class HarvestClient {
       requestData = formData;
     }
 
-    const response = await this.client.patch<HarvestExpense>(`/expenses/${expenseId}`, requestData, {
-      headers:
-        requestData instanceof FormData
-          ? { 'Content-Type': 'multipart/form-data' }
-          : { 'Content-Type': 'application/json' },
-    });
+    const response = await this.client.patch<HarvestExpense>(
+      `/expenses/${expenseId}`,
+      requestData,
+      {
+        headers:
+          requestData instanceof FormData
+            ? { 'Content-Type': 'multipart/form-data' }
+            : { 'Content-Type': 'application/json' },
+      }
+    );
     return response.data;
   }
 

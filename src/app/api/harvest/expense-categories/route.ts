@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     console.error('Error fetching expense categories:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to fetch expense categories' },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

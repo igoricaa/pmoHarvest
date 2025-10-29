@@ -24,8 +24,7 @@ export const harvestKeys = {
   timeEntries: (params?: Record<string, unknown>) =>
     [...harvestKeys.all, 'time-entries', params] as const,
   timeEntry: (id: number) => [...harvestKeys.all, 'time-entry', id] as const,
-  expenses: (params?: Record<string, unknown>) =>
-    [...harvestKeys.all, 'expenses', params] as const,
+  expenses: (params?: Record<string, unknown>) => [...harvestKeys.all, 'expenses', params] as const,
   expense: (id: number) => [...harvestKeys.all, 'expense', id] as const,
   projects: () => [...harvestKeys.all, 'projects'] as const,
   tasks: (projectId: number) => [...harvestKeys.all, 'tasks', projectId] as const,
@@ -81,7 +80,7 @@ export function useUpdateTimeEntry(id: number) {
     mutationFn: async (input: UpdateTimeEntryInput) => {
       const { data } = await axios.patch<HarvestTimeEntry>(
         `/api/harvest/time-entries/${id}`,
-        input,
+        input
       );
       return data;
     },
@@ -194,7 +193,7 @@ export function useTaskAssignments(projectId: number | null) {
     queryKey: harvestKeys.tasks(projectId!),
     queryFn: async () => {
       const { data } = await axios.get<HarvestTaskAssignmentResponse>(
-        `/api/harvest/projects/${projectId}/tasks`,
+        `/api/harvest/projects/${projectId}/tasks`
       );
       return data;
     },
@@ -212,7 +211,7 @@ export function useExpenseCategories() {
     queryKey: harvestKeys.expenseCategories(),
     queryFn: async () => {
       const { data } = await axios.get<HarvestExpenseCategoryResponse>(
-        '/api/harvest/expense-categories',
+        '/api/harvest/expense-categories'
       );
       return data;
     },

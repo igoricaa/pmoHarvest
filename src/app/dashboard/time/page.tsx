@@ -54,16 +54,15 @@ const timeEntrySchema = z.object({
     .string()
     .min(1, 'Hours is required')
     .refine(
-      (val) => {
+      val => {
         const num = Number.parseFloat(val);
         return !Number.isNaN(num) && num > 0 && num <= 24;
       },
-      { message: 'Hours must be between 0 and 24' },
+      { message: 'Hours must be between 0 and 24' }
     )
-    .refine(
-      (val) => /^\d+(\.\d{1,2})?$/.test(val),
-      { message: 'Hours must be a valid number (e.g., 8 or 8.5)' },
-    ),
+    .refine(val => /^\d+(\.\d{1,2})?$/.test(val), {
+      message: 'Hours must be a valid number (e.g., 8 or 8.5)',
+    }),
   notes: z.string().optional(),
 });
 
@@ -148,10 +147,7 @@ export default function TimeEntriesPage() {
           <h1 className="text-3xl font-bold tracking-tight">Time Entries</h1>
           <p className="text-muted-foreground">Log your hours and track your time</p>
         </div>
-        <Button
-          variant={showForm ? 'outline' : 'default'}
-          onClick={() => setShowForm(!showForm)}
-        >
+        <Button variant={showForm ? 'outline' : 'default'} onClick={() => setShowForm(!showForm)}>
           {showForm ? 'Hide Form' : 'Log Time'}
         </Button>
       </div>
@@ -179,10 +175,14 @@ export default function TimeEntriesPage() {
                                 variant="outline"
                                 className={cn(
                                   'w-full pl-3 text-left font-normal',
-                                  !field.value && 'text-muted-foreground',
+                                  !field.value && 'text-muted-foreground'
                                 )}
                               >
-                                {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
+                                {field.value ? (
+                                  format(field.value, 'PPP')
+                                ) : (
+                                  <span>Pick a date</span>
+                                )}
                                 <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                               </Button>
                             </FormControl>
@@ -192,7 +192,7 @@ export default function TimeEntriesPage() {
                               mode="single"
                               selected={field.value}
                               onSelect={field.onChange}
-                              disabled={(date) => date > new Date() || date < new Date('1900-01-01')}
+                              disabled={date => date > new Date() || date < new Date('1900-01-01')}
                               initialFocus
                             />
                           </PopoverContent>
@@ -213,7 +213,7 @@ export default function TimeEntriesPage() {
                             inputMode="decimal"
                             placeholder="8.0"
                             {...field}
-                            onKeyDown={(e) => {
+                            onKeyDown={e => {
                               // Allow: backspace, delete, tab, escape, enter, decimal point
                               if (
                                 [46, 8, 9, 27, 13, 110, 190].indexOf(e.keyCode) !== -1 ||
@@ -235,7 +235,7 @@ export default function TimeEntriesPage() {
                                 e.preventDefault();
                               }
                             }}
-                            onChange={(e) => {
+                            onChange={e => {
                               const value = e.target.value;
                               // Allow empty string
                               if (value === '') {
@@ -282,7 +282,7 @@ export default function TimeEntriesPage() {
                                 Loading projects...
                               </div>
                             ) : (
-                              projectsData?.projects.map((project) => (
+                              projectsData?.projects.map(project => (
                                 <SelectItem key={project.id} value={project.id.toString()}>
                                   {project.name}
                                 </SelectItem>
@@ -321,8 +321,11 @@ export default function TimeEntriesPage() {
                                 Loading tasks...
                               </div>
                             ) : (
-                              tasksData?.task_assignments.map((assignment) => (
-                                <SelectItem key={assignment.id} value={assignment.task.id.toString()}>
+                              tasksData?.task_assignments.map(assignment => (
+                                <SelectItem
+                                  key={assignment.id}
+                                  value={assignment.task.id.toString()}
+                                >
                                   {assignment.task.name}
                                 </SelectItem>
                               ))
@@ -399,7 +402,7 @@ export default function TimeEntriesPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {timeEntriesData?.time_entries.map((entry) => (
+                  {timeEntriesData?.time_entries.map(entry => (
                     <TableRow key={entry.id}>
                       <TableCell>{format(new Date(entry.spent_date), 'PP')}</TableCell>
                       <TableCell className="font-medium">{entry.project.name}</TableCell>

@@ -1,10 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { refreshHarvestToken } from "@/lib/harvest/token-refresh";
-import {
-  getAccountByUserIdAndProvider,
-  updateAccountTokens,
-} from "@/lib/db/repositories/account";
+import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@/lib/auth';
+import { refreshHarvestToken } from '@/lib/harvest/token-refresh';
+import { getAccountByUserIdAndProvider, updateAccountTokens } from '@/lib/db/repositories/account';
 
 /**
  * Refresh Harvest OAuth Token
@@ -19,21 +16,15 @@ export async function POST(request: NextRequest) {
     const session = await auth.api.getSession({ headers: request.headers });
 
     if (!session?.user) {
-      return NextResponse.json(
-        { error: "Unauthorized - no active session" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized - no active session' }, { status: 401 });
     }
 
     // Get the Harvest account with OAuth tokens from the database
-    const harvestAccount = await getAccountByUserIdAndProvider(
-      session.user.id,
-      "harvest"
-    );
+    const harvestAccount = await getAccountByUserIdAndProvider(session.user.id, 'harvest');
 
     if (!harvestAccount?.refreshToken) {
       return NextResponse.json(
-        { error: "No refresh token found for Harvest account" },
+        { error: 'No refresh token found for Harvest account' },
         { status: 400 }
       );
     }
@@ -42,11 +33,11 @@ export async function POST(request: NextRequest) {
     const refreshResult = await refreshHarvestToken(harvestAccount.refreshToken);
 
     if (!refreshResult.success || !refreshResult.accessToken || !refreshResult.refreshToken) {
-      console.error("Token refresh failed:", refreshResult.error);
+      console.error('Token refresh failed:', refreshResult.error);
 
       return NextResponse.json(
         {
-          error: refreshResult.error || "Failed to refresh token",
+          error: refreshResult.error || 'Failed to refresh token',
           requiresReauth: true, // Signal that user needs to re-authenticate
         },
         { status: 401 }
@@ -55,11 +46,9 @@ export async function POST(request: NextRequest) {
 
     // Update the account with new tokens in the database
     // Harvest rotates refresh tokens, so we need to update both
-    const expiresAt = new Date(
-      Date.now() + (refreshResult.expiresIn || 1209600) * 1000
-    );
+    const expiresAt = new Date(Date.now() + (refreshResult.expiresIn || 1209600) * 1000);
 
-    await updateAccountTokens(session.user.id, "harvest", {
+    await updateAccountTokens(session.user.id, 'harvest', {
       accessToken: refreshResult.accessToken,
       refreshToken: refreshResult.refreshToken,
       expiresAt,
@@ -69,14 +58,14 @@ export async function POST(request: NextRequest) {
       success: true,
       accessToken: refreshResult.accessToken,
       expiresIn: refreshResult.expiresIn,
-      message: "Token refreshed successfully",
+      message: 'Token refreshed successfully',
     });
   } catch (error) {
-    console.error("Error in refresh-harvest-token endpoint:", error);
+    console.error('Error in refresh-harvest-token endpoint:', error);
 
     return NextResponse.json(
       {
-        error: "Internal server error during token refresh",
+        error: 'Internal server error during token refresh',
         requiresReauth: false,
       },
       { status: 500 }

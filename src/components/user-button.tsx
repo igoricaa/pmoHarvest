@@ -31,7 +31,7 @@ export function UserButton() {
   const initials = user.name
     ? user.name
         .split(' ')
-        .map((n) => n[0])
+        .map(n => n[0])
         .join('')
         .toUpperCase()
     : user.email?.[0]?.toUpperCase() || '?';

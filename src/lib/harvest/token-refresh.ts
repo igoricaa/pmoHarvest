@@ -24,41 +24,36 @@ export interface TokenRefreshResult {
  * @param refreshToken - The refresh token to use
  * @returns TokenRefreshResult with new tokens or error
  */
-export async function refreshHarvestToken(
-  refreshToken: string
-): Promise<TokenRefreshResult> {
+export async function refreshHarvestToken(refreshToken: string): Promise<TokenRefreshResult> {
   try {
     const clientId = process.env.HARVEST_OAUTH_CLIENT_ID;
     const clientSecret = process.env.HARVEST_OAUTH_CLIENT_SECRET;
 
     if (!clientId || !clientSecret) {
-      throw new Error("Missing OAuth credentials");
+      throw new Error('Missing OAuth credentials');
     }
 
-    const response = await fetch(
-      "https://id.getharvest.com/api/v2/oauth2/token",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-          "User-Agent": "PMO Harvest Portal (token-refresh)",
-        },
-        body: new URLSearchParams({
-          refresh_token: refreshToken,
-          client_id: clientId,
-          client_secret: clientSecret,
-          grant_type: "refresh_token",
-        }),
-      }
-    );
+    const response = await fetch('https://id.getharvest.com/api/v2/oauth2/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'User-Agent': 'PMO Harvest Portal (token-refresh)',
+      },
+      body: new URLSearchParams({
+        refresh_token: refreshToken,
+        client_id: clientId,
+        client_secret: clientSecret,
+        grant_type: 'refresh_token',
+      }),
+    });
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      console.error("Harvest token refresh failed:", errorData);
+      console.error('Harvest token refresh failed:', errorData);
 
       return {
         success: false,
-        error: errorData.error_description || errorData.error || "Token refresh failed",
+        error: errorData.error_description || errorData.error || 'Token refresh failed',
       };
     }
 
@@ -71,10 +66,10 @@ export async function refreshHarvestToken(
       expiresIn: data.expires_in,
     };
   } catch (error) {
-    console.error("Error refreshing Harvest token:", error);
+    console.error('Error refreshing Harvest token:', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: error instanceof Error ? error.message : 'Unknown error',
     };
   }
 }

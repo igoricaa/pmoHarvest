@@ -43,7 +43,7 @@ export default function DashboardPage() {
   const monthExpenseTotal =
     monthExpenses?.expenses.reduce((sum, expense) => sum + expense.total_cost, 0) || 0;
   const pendingExpenses =
-    monthExpenses?.expenses.filter((e) => !e.is_billed && !e.is_locked).length || 0;
+    monthExpenses?.expenses.filter(e => !e.is_billed && !e.is_locked).length || 0;
 
   // Recent entries (last 5)
   const recentTimeEntries = monthTimeEntries?.time_entries.slice(0, 5) || [];
@@ -162,7 +162,7 @@ export default function DashboardPage() {
             <TabsContent value="time" className="space-y-4">
               {isLoadingMonthTime ? (
                 <div className="space-y-2">
-                  {[1, 2, 3].map((i) => (
+                  {[1, 2, 3].map(i => (
                     <Skeleton key={i} className="h-16 w-full" />
                   ))}
                 </div>
@@ -172,7 +172,7 @@ export default function DashboardPage() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {recentTimeEntries.map((entry) => (
+                  {recentTimeEntries.map(entry => (
                     <div
                       key={entry.id}
                       className="flex items-center justify-between rounded-lg border p-4"
@@ -182,9 +182,7 @@ export default function DashboardPage() {
                           <p className="font-medium">{entry.project.name}</p>
                           <Badge variant="secondary">{entry.task.name}</Badge>
                         </div>
-                        <p className="text-sm text-muted-foreground">
-                          {entry.notes || 'No notes'}
-                        </p>
+                        <p className="text-sm text-muted-foreground">{entry.notes || 'No notes'}</p>
                         <p className="text-xs text-muted-foreground">
                           {format(new Date(entry.spent_date), 'PPP')}
                         </p>
@@ -206,7 +204,7 @@ export default function DashboardPage() {
             <TabsContent value="expenses" className="space-y-4">
               {isLoadingMonthExpenses ? (
                 <div className="space-y-2">
-                  {[1, 2, 3].map((i) => (
+                  {[1, 2, 3].map(i => (
                     <Skeleton key={i} className="h-16 w-full" />
                   ))}
                 </div>
@@ -216,7 +214,7 @@ export default function DashboardPage() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {recentExpenses.map((expense) => (
+                  {recentExpenses.map(expense => (
                     <div
                       key={expense.id}
                       className="flex items-center justify-between rounded-lg border p-4"
