@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { createHarvestClient } from '@/lib/harvest';
 import { getErrorMessage } from '@/lib/api-utils';
+import { logError } from '@/lib/logger';
 
 /**
  * Get User Task Assignments for a Specific Project
@@ -43,7 +44,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(taskAssignments);
   } catch (error) {
-    console.error('Error fetching user task assignments:', error);
+    logError('Failed to fetch user task assignments', error);
     return NextResponse.json(
       { error: getErrorMessage(error, 'Failed to fetch task assignments') },
       { status: 500 }

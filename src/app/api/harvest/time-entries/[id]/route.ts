@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { createHarvestClient } from '@/lib/harvest';
 import { getErrorMessage } from '@/lib/api-utils';
+import { logError } from '@/lib/logger';
+import { validateRequest } from '@/lib/validation/validate-request';
+import { timeEntryUpdateSchema } from '@/lib/validation/harvest-schemas';
 import type { UpdateTimeEntryInput } from '@/types/harvest';
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -26,7 +29,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     return NextResponse.json(timeEntry);
   } catch (error) {
-    console.error('Error fetching time entry:', error);
+    logError('Failed to fetch time entry', error);
     return NextResponse.json(
       { error: getErrorMessage(error, 'Failed to fetch time entry') },
       { status: 500 }
@@ -51,14 +54,23 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     }
 
     const { id } = await params;
-    const body: UpdateTimeEntryInput = await request.json();
+    const body = await request.json();
+
+    // Validate request body
+    const validation = validateRequest(timeEntryUpdateSchema, body);
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: validation.message, errors: validation.errors },
+        { status: 400 }
+      );
+    }
 
     const harvestClient = createHarvestClient(accessToken);
-    const timeEntry = await harvestClient.updateTimeEntry(Number(id), body);
+    const timeEntry = await harvestClient.updateTimeEntry(Number(id), validation.data);
 
     return NextResponse.json(timeEntry);
   } catch (error) {
-    console.error('Error updating time entry:', error);
+    logError('Failed to update time entry', error);
     return NextResponse.json(
       { error: getErrorMessage(error, 'Failed to update time entry') },
       { status: 500 }
@@ -91,7 +103,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error) {
-    console.error('Error deleting time entry:', error);
+    logError('Failed to delete time entry', error);
     return NextResponse.json(
       { error: getErrorMessage(error, 'Failed to delete time entry') },
       { status: 500 }

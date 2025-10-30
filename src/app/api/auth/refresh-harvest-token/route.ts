@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { refreshHarvestToken } from '@/lib/harvest/token-refresh';
 import { getAccountByUserIdAndProvider, updateAccountTokens } from '@/lib/db/repositories/account';
+import { logError } from '@/lib/logger';
 
 /**
  * Refresh Harvest OAuth Token
@@ -33,7 +34,7 @@ export async function POST(request: NextRequest) {
     const refreshResult = await refreshHarvestToken(harvestAccount.refreshToken);
 
     if (!refreshResult.success || !refreshResult.accessToken || !refreshResult.refreshToken) {
-      console.error('Token refresh failed:', refreshResult.error);
+      logError('Token refresh failed', new Error(refreshResult.error || 'Unknown error'));
 
       return NextResponse.json(
         {
@@ -61,7 +62,7 @@ export async function POST(request: NextRequest) {
       message: 'Token refreshed successfully',
     });
   } catch (error) {
-    console.error('Error in refresh-harvest-token endpoint:', error);
+    logError('Failed to refresh Harvest token', error);
 
     return NextResponse.json(
       {

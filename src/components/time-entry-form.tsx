@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -33,7 +33,8 @@ import {
   useUserProjectAssignments,
   useTaskAssignments,
 } from '@/hooks/use-harvest';
-import { useSession } from '@/lib/auth-client';
+import { useIsAdminOrManager } from '@/lib/admin-utils';
+import { useNumericInput } from '@/hooks/use-numeric-input';
 import { toast } from 'sonner';
 
 const timeEntrySchema = z.object({
@@ -72,18 +73,14 @@ export function TimeEntryForm({
   submitButtonText = 'Log Time',
 }: TimeEntryFormProps) {
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
-  const { data: session } = useSession();
-
-  // Use appropriate endpoint based on user role
-  const isAdminOrManager = session?.user?.accessRoles?.some(
-    role => role === 'administrator' || role === 'manager'
-  );
+  const isAdminOrManager = useIsAdminOrManager();
+  const numericHandlers = useNumericInput(2);
 
   const { data: allProjectsData, isLoading: isLoadingAllProjects } = useProjects({
-    enabled: !!session && isAdminOrManager,
+    enabled: isAdminOrManager === true,
   });
   const { data: userProjectsData, isLoading: isLoadingUserProjects } = useUserProjectAssignments({
-    enabled: !!session && !isAdminOrManager,
+    enabled: isAdminOrManager === false,
   });
 
   // Use all projects for admins/managers, user projects for members
@@ -134,11 +131,13 @@ export function TimeEntryForm({
 
   const projectId = form.watch('project_id');
 
-  // Update selected project when form value changes
-  if (projectId && Number(projectId) !== selectedProjectId) {
-    setSelectedProjectId(Number(projectId));
-    form.setValue('task_id', ''); // Reset task when project changes
-  }
+  // Update selected project when form value changes (moved to useEffect to avoid render-phase side effects)
+  useEffect(() => {
+    if (projectId && Number(projectId) !== selectedProjectId) {
+      setSelectedProjectId(Number(projectId));
+      form.setValue('task_id', ''); // Reset task when project changes
+    }
+  }, [projectId, selectedProjectId, form]);
 
   return (
     <Form {...form}>
@@ -197,48 +196,8 @@ export function TimeEntryForm({
                     inputMode="decimal"
                     placeholder="8.0"
                     {...field}
-                    onKeyDown={e => {
-                      // Allow: backspace, delete, tab, escape, enter, decimal point
-                      if (
-                        [46, 8, 9, 27, 13, 110, 190].indexOf(e.keyCode) !== -1 ||
-                        // Allow: Ctrl/Cmd+A, Ctrl/Cmd+C, Ctrl/Cmd+V, Ctrl/Cmd+X
-                        (e.keyCode === 65 && (e.ctrlKey === true || e.metaKey === true)) ||
-                        (e.keyCode === 67 && (e.ctrlKey === true || e.metaKey === true)) ||
-                        (e.keyCode === 86 && (e.ctrlKey === true || e.metaKey === true)) ||
-                        (e.keyCode === 88 && (e.ctrlKey === true || e.metaKey === true)) ||
-                        // Allow: home, end, left, right
-                        (e.keyCode >= 35 && e.keyCode <= 39)
-                      ) {
-                        return;
-                      }
-                      // Ensure that it's a number and stop the keypress if not
-                      if (
-                        (e.shiftKey || e.keyCode < 48 || e.keyCode > 57) &&
-                        (e.keyCode < 96 || e.keyCode > 105)
-                      ) {
-                        e.preventDefault();
-                      }
-                    }}
-                    onChange={e => {
-                      const value = e.target.value;
-                      // Allow empty string
-                      if (value === '') {
-                        field.onChange(value);
-                        return;
-                      }
-                      // Remove any non-numeric characters except decimal point
-                      const sanitized = value.replace(/[^\d.]/g, '');
-                      // Ensure only one decimal point
-                      const parts = sanitized.split('.');
-                      const cleaned =
-                        parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : sanitized;
-                      // Limit to 2 decimal places
-                      const limited =
-                        parts.length === 2 && parts[1].length > 2
-                          ? parts[0] + '.' + parts[1].slice(0, 2)
-                          : cleaned;
-                      field.onChange(limited);
-                    }}
+                    onKeyDown={numericHandlers.onKeyDown}
+                    onChange={e => numericHandlers.onChange(e, field.onChange)}
                   />
                 </FormControl>
                 <FormMessage />

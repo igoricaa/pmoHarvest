@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { createHarvestClient } from '@/lib/harvest';
 import { getErrorMessage } from '@/lib/api-utils';
+import { logError } from '@/lib/logger';
+import { validateRequest } from '@/lib/validation/validate-request';
+import { expenseUpdateSchema } from '@/lib/validation/harvest-schemas';
 import type { UpdateExpenseInput } from '@/types/harvest';
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -26,7 +29,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     return NextResponse.json(expense);
   } catch (error) {
-    console.error('Error fetching expense:', error);
+    logError('Failed to fetch expense', error);
     return NextResponse.json(
       { error: getErrorMessage(error, 'Failed to fetch expense') },
       { status: 500 }
@@ -51,14 +54,23 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     }
 
     const { id } = await params;
-    const body: UpdateExpenseInput = await request.json();
+    const body = await request.json();
+
+    // Validate request body
+    const validation = validateRequest(expenseUpdateSchema, body);
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: validation.message, errors: validation.errors },
+        { status: 400 }
+      );
+    }
 
     const harvestClient = createHarvestClient(accessToken);
-    const expense = await harvestClient.updateExpense(Number(id), body);
+    const expense = await harvestClient.updateExpense(Number(id), validation.data);
 
     return NextResponse.json(expense);
   } catch (error) {
-    console.error('Error updating expense:', error);
+    logError('Failed to update expense', error);
     return NextResponse.json(
       { error: getErrorMessage(error, 'Failed to update expense') },
       { status: 500 }
@@ -91,7 +103,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error) {
-    console.error('Error deleting expense:', error);
+    logError('Failed to delete expense', error);
     return NextResponse.json(
       { error: getErrorMessage(error, 'Failed to delete expense') },
       { status: 500 }

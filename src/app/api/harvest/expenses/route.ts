@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { createHarvestClient } from '@/lib/harvest';
 import { getErrorMessage } from '@/lib/api-utils';
+import { logError } from '@/lib/logger';
+import { validateRequest } from '@/lib/validation/validate-request';
+import { expenseCreateSchema } from '@/lib/validation/harvest-schemas';
 import type { CreateExpenseInput, ExpenseQueryParams } from '@/types/harvest';
 
 export async function GET(request: NextRequest) {
@@ -41,7 +44,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(expenses);
   } catch (error) {
-    console.error('Error fetching expenses:', error);
+    logError('Failed to fetch expenses', error);
     return NextResponse.json(
       { error: getErrorMessage(error, 'Failed to fetch expenses') },
       { status: 500 }
@@ -68,7 +71,7 @@ export async function POST(request: NextRequest) {
 
     // Check if request contains FormData (multipart) or JSON
     const contentType = request.headers.get('content-type') || '';
-    let expenseData: CreateExpenseInput;
+    let expenseData;
 
     if (contentType.includes('multipart/form-data')) {
       // Handle FormData with receipt upload
@@ -87,12 +90,22 @@ export async function POST(request: NextRequest) {
       expenseData = await request.json();
     }
 
+    // Validate request body (excluding receipt field for FormData)
+    const { receipt, ...validatableData } = expenseData;
+    const validation = validateRequest(expenseCreateSchema, validatableData);
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: validation.message, errors: validation.errors },
+        { status: 400 }
+      );
+    }
+
     const harvestClient = createHarvestClient(accessToken);
-    const expense = await harvestClient.createExpense(expenseData);
+    const expense = await harvestClient.createExpense({ ...validation.data, receipt });
 
     return NextResponse.json(expense, { status: 201 });
   } catch (error) {
-    console.error('Error creating expense:', error);
+    logError('Failed to create expense', error);
     return NextResponse.json(
       { error: getErrorMessage(error, 'Failed to create expense') },
       { status: 500 }

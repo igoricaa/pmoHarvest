@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { createHarvestClient } from '@/lib/harvest';
+import { logError } from '@/lib/logger';
+import { getErrorMessage } from '@/lib/api-utils';
 
 export async function GET(request: NextRequest) {
   try {
@@ -23,9 +25,9 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(categories);
   } catch (error) {
-    console.error('Error fetching expense categories:', error);
+    logError('Failed to fetch expense categories', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to fetch expense categories' },
+      { error: getErrorMessage(error, 'Failed to fetch expense categories') },
       { status: 500 }
     );
   }

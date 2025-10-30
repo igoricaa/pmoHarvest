@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { createHarvestClient } from '@/lib/harvest';
 import { getErrorMessage } from '@/lib/api-utils';
+import { logError } from '@/lib/logger';
+import { validateRequest } from '@/lib/validation/validate-request';
+import { timeEntryCreateSchema } from '@/lib/validation/harvest-schemas';
 import type { CreateTimeEntryInput, TimeEntryQueryParams } from '@/types/harvest';
 
 export async function GET(request: NextRequest) {
@@ -41,7 +44,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(timeEntries);
   } catch (error) {
-    console.error('Error fetching time entries:', error);
+    logError('Failed to fetch time entries', error);
     return NextResponse.json(
       { error: getErrorMessage(error, 'Failed to fetch time entries') },
       { status: 500 }
@@ -66,14 +69,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No Harvest access token found' }, { status: 401 });
     }
 
-    const body: CreateTimeEntryInput = await request.json();
+    const body = await request.json();
+
+    // Validate request body
+    const validation = validateRequest(timeEntryCreateSchema, body);
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: validation.message, errors: validation.errors },
+        { status: 400 }
+      );
+    }
 
     const harvestClient = createHarvestClient(accessToken);
-    const timeEntry = await harvestClient.createTimeEntry(body);
+    const timeEntry = await harvestClient.createTimeEntry(validation.data);
 
     return NextResponse.json(timeEntry, { status: 201 });
   } catch (error) {
-    console.error('Error creating time entry:', error);
+    logError('Failed to create time entry', error);
     return NextResponse.json(
       { error: getErrorMessage(error, 'Failed to create time entry') },
       { status: 500 }

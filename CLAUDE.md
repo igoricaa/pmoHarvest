@@ -114,13 +114,20 @@ createHarvestClient(accessToken: string): HarvestClient
 ```typescript
 harvestKeys = {
   all: ['harvest'],
-  timeEntries: (params?) => ['harvest', 'time-entries', params],
-  expenses: (params?) => ['harvest', 'expenses', params],
+  timeEntries: (params?) => ['harvest', 'time-entries', normalizeParams(params)],
+  expenses: (params?) => ['harvest', 'expenses', normalizeParams(params)],
   projects: () => ['harvest', 'projects'],
   tasks: projectId => ['harvest', 'tasks', projectId],
   expenseCategories: () => ['harvest', 'expense-categories'],
   currentUser: () => ['harvest', 'current-user'],
 };
+```
+
+**Query Normalization**: `normalizeParams()` sorts object keys to prevent duplicate cache entries:
+```typescript
+// These create the SAME cache key:
+harvestKeys.timeEntries({ to: '2024-01-31', from: '2024-01-01' })
+harvestKeys.timeEntries({ from: '2024-01-01', to: '2024-01-31' })
 ```
 
 **Stale Times**:
@@ -130,7 +137,16 @@ harvestKeys = {
 - Expense categories: 10min
 - Current user: 30min
 
-**Mutations**: Invalidate related queries in `onSuccess`
+**Mutations**: Use wildcard `invalidateQueries()` to match all param variations:
+```typescript
+// ✅ CORRECT - Invalidates all time entry queries regardless of params
+queryClient.invalidateQueries({
+  queryKey: [...harvestKeys.all, 'time-entries']
+});
+
+// ❌ WRONG - Only invalidates exact match
+queryClient.setQueryData(harvestKeys.timeEntries(), ...)
+```
 
 ### Role-Based Data Access
 
@@ -188,6 +204,73 @@ enabled: !!session && isAdminOrManager  // false until session loads
 - `false` → Query disabled
 - `!!session &&` → Ensures explicit `false` until session loads
 
+### Admin/Manager Permission Architecture
+
+**Server-Side Permission Strategy (SIMPLIFIED)**:
+
+Our API routes use a **trust Harvest API** approach for manager permissions:
+
+```typescript
+// All admin/manager routes follow this pattern:
+export async function PATCH(request: NextRequest, { params }) {
+  // 1. Auth check
+  const session = await auth.api.getSession({ headers: request.headers });
+  if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  // 2. Role check (admin OR manager allowed)
+  if (!isAdminOrManager(session)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
+  // 3. Get user's access token
+  const { accessToken } = await auth.api.getAccessToken({
+    body: { providerId: 'harvest' },
+    headers: request.headers,
+  });
+
+  // 4. Call Harvest API - it handles manager permissions via OAuth token
+  const client = createHarvestClient(accessToken);
+  const result = await client.updateProject(projectId, body);
+  // ✅ Harvest returns 403 if manager tries to access unmanaged project
+
+  return NextResponse.json(result);
+}
+```
+
+**Why This Works**:
+- ✅ Harvest API enforces permissions via OAuth tokens
+- ✅ Manager tokens can only access projects they manage
+- ✅ No redundant permission checks needed (avoids N+1 queries)
+- ✅ Simpler code, fewer API calls, better performance
+
+**Manager Filtering (Client-Side)**:
+
+For queries that need manager-specific filtering, use `useManagedProjects()` hook:
+
+```typescript
+const { data: session } = useSession();
+const { data: managedProjectIds } = useManagedProjects(); // Only runs for managers
+
+const isManager = session?.user?.accessRoles?.includes('manager');
+const isAdmin = session?.user?.accessRoles?.includes('administrator');
+
+// Filter data client-side for managers
+const filteredData = useMemo(() => {
+  if (!data || isAdmin) return data; // Admins see all
+  if (isManager && managedProjectIds) {
+    return data.filter(item => managedProjectIds.includes(item.project.id));
+  }
+  return data;
+}, [data, isManager, isAdmin, managedProjectIds]);
+```
+
+**useManagedProjects() Hook**:
+- Fetches `/api/harvest/user-project-assignments?raw=true`
+- Filters for `is_project_manager === true`
+- Returns array of managed project IDs
+- Enabled only for managers (not admins or members)
+- 10min staleTime for performance
+
 ### Token Refresh
 
 Access tokens expire after 14 days. Auto-refresh via:
@@ -223,20 +306,23 @@ UPLOADTHING_APP_ID=              # Receipt uploads
 4. [src/app/api/harvest/time-entries/route.ts](src/app/api/harvest/time-entries/route.ts) - API pattern reference
 5. [src/hooks/use-harvest.ts](src/hooks/use-harvest.ts) - React Query hooks
 6. [src/lib/auth-utils.ts](src/lib/auth-utils.ts) - Auth utilities
-7. [src/components/app-sidebar.tsx](src/components/app-sidebar.tsx) - Sidebar navigation
-8. [src/components/time-entry-modal.tsx](src/components/time-entry-modal.tsx) - Time entry modal
-9. [src/components/expense-modal.tsx](src/components/expense-modal.tsx) - Expense modal
-10. [src/components/expense-form.tsx](src/components/expense-form.tsx) - Reusable expense form
-11. [src/components/time-entry-form.tsx](src/components/time-entry-form.tsx) - Reusable time entry form
+7. [src/lib/admin-utils.ts](src/lib/admin-utils.ts) - Admin role checks and utilities
+8. [src/components/app-sidebar.tsx](src/components/app-sidebar.tsx) - Sidebar navigation
+9. [src/components/time-entry-modal.tsx](src/components/time-entry-modal.tsx) - Time entry modal
+10. [src/components/expense-modal.tsx](src/components/expense-modal.tsx) - Expense modal
+11. [src/components/expense-form.tsx](src/components/expense-form.tsx) - Reusable expense form
+12. [src/components/time-entry-form.tsx](src/components/time-entry-form.tsx) - Reusable time entry form
+13. [src/components/admin/forms/project-form-modal.tsx](src/components/admin/forms/project-form-modal.tsx) - Project form with budget field handling
 
 ## Common Patterns
 
 ### New API Route
 
 1. Create in `src/app/api/harvest/`
-2. Follow pattern: session → accessToken → client → Harvest API
-3. Use `getErrorMessage()` from `@/lib/api-utils`
-4. Return NextResponse with proper status codes
+2. Follow pattern: session → accessToken → **validation** → client → Harvest API
+3. Validate request body using Zod schemas (see Server-Side Validation below)
+4. Use `logError()` from `@/lib/logger` for sanitized error logging
+5. Return NextResponse with proper status codes (400 for validation errors, 401 for auth, 500 for server errors)
 
 ### New React Query Hook
 
@@ -247,10 +333,32 @@ UPLOADTHING_APP_ID=              # Receipt uploads
 
 ### Role-Based UI
 
+**Client-side (in components):**
+
 ```typescript
+import { useIsAdminOrManager } from '@/lib/admin-utils';
+
+// Use hook for cleaner code (recommended)
+const isAdminOrManager = useIsAdminOrManager();
+
+// Or check session directly
 const { data: session } = useSession();
 const isAdmin = session?.user?.accessRoles?.includes('administrator');
 const canApprove = session?.user?.permissions?.expenses?.includes('approve');
+```
+
+**Server-side (in API routes):**
+
+```typescript
+import { isAdminOrManager } from '@/lib/admin-utils';
+
+// Check roles (admin OR manager allowed)
+if (!isAdminOrManager(session)) {
+  return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+}
+
+// No need for canManageProject() checks - Harvest API handles this via OAuth tokens
+// Manager tokens can only access projects they manage (Harvest returns 403 otherwise)
 ```
 
 ### Modal Pattern
@@ -288,12 +396,14 @@ See [TimeEntryModal](src/components/time-entry-modal.tsx) and [ExpenseModal](src
 - Used by: ExpenseModal, expenses page
 - Features: Receipt upload (10MB max, JPEG/PNG/GIF/PDF), role-based projects, validation
 - Props: `onSuccess`, `onCancel`, `showCancelButton`, `submitButtonText`
+- **Uses `useIsAdminOrManager()` hook** for role-based project fetching
 
 #### TimeEntryForm
 [src/components/time-entry-form.tsx](src/components/time-entry-form.tsx)
 - Used by: TimeEntryModal, time entries page
 - Features: Project-task cascade, role-based projects, hours validation (0-24)
 - Props: `onSuccess`, `onCancel`, `showCancelButton`, `submitButtonText`
+- **Uses `useIsAdminOrManager()` hook** for role-based project/task fetching
 
 **Usage**:
 ```typescript
@@ -318,6 +428,152 @@ Shared:
 - `HARVEST_ACCOUNT_ID` (org ID)
 - OAuth client credentials
 - Database (separate rows per user)
+
+## React Patterns & Common Pitfalls
+
+### Rules of Hooks - Admin Pages Pattern
+
+**CRITICAL**: All hooks MUST be called before early returns to avoid conditional execution.
+
+**Correct Pattern**:
+```typescript
+export default function AdminPage() {
+  // 1. All hooks at top (session, role checks, state)
+  const { data: session } = useSession();
+  const isAdminOrManager = useIsAdminOrManager();
+  const [state, setState] = useState();
+
+  // 2. Data hooks (queries, mutations)
+  const { data } = useData();
+  const mutation = useMutation();
+
+  // 3. Computed values (useMemo)
+  const filtered = useMemo(() => {...}, [deps]);
+
+  // 4. Side effects (useEffect)
+  useEffect(() => { router.push('/dashboard'); }, [deps]);
+
+  // 5. Early returns AFTER all hooks
+  if (!session) return null;
+
+  // 6. Rest of component
+  return <div>...</div>;
+}
+```
+
+**Files Following This Pattern**:
+- [src/app/dashboard/admin/projects/page.tsx](src/app/dashboard/admin/projects/page.tsx)
+- [src/app/dashboard/admin/team/page.tsx](src/app/dashboard/admin/team/page.tsx)
+- [src/app/dashboard/admin/clients/page.tsx](src/app/dashboard/admin/clients/page.tsx)
+- [src/app/dashboard/admin/time/page.tsx](src/app/dashboard/admin/time/page.tsx)
+- [src/app/dashboard/admin/expenses/page.tsx](src/app/dashboard/admin/expenses/page.tsx)
+
+### Server-Side Validation
+
+All POST/PATCH API routes validate request bodies using Zod schemas:
+
+```typescript
+import { validateRequest } from '@/lib/validation/validate-request';
+import { timeEntryCreateSchema } from '@/lib/validation/harvest-schemas';
+
+const body = await request.json();
+
+// Validate request body
+const validation = validateRequest(timeEntryCreateSchema, body);
+if (!validation.success) {
+  return NextResponse.json(
+    { error: validation.message, errors: validation.errors },
+    { status: 400 }
+  );
+}
+
+// Use validation.data (type-safe!)
+const result = await harvestClient.createTimeEntry(validation.data);
+```
+
+**Available Schemas**: See [src/lib/validation/harvest-schemas.ts](src/lib/validation/harvest-schemas.ts)
+
+### Numeric Input Hook
+
+For decimal inputs (hours, costs), use `useNumericInput()` hook:
+
+```typescript
+import { useNumericInput } from '@/hooks/use-numeric-input';
+
+const numericHandlers = useNumericInput(2); // 2 decimal places
+
+<Input
+  inputMode="decimal"
+  placeholder="8.0"
+  {...field}
+  onKeyDown={numericHandlers.onKeyDown}
+  onChange={e => numericHandlers.onChange(e, field.onChange)}
+/>
+```
+
+### Error Boundaries
+
+Error boundaries wrap layouts to prevent white screens:
+
+```typescript
+import { ErrorBoundary } from '@/components/error-boundary';
+
+<ErrorBoundary>
+  <YourComponent />
+</ErrorBoundary>
+```
+
+**Reference**: [src/components/error-boundary.tsx](src/components/error-boundary.tsx)
+
+### Calendar Popover Pattern
+
+Use state management to close calendar on selection:
+
+```typescript
+<FormField
+  render={({ field }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    return (
+      <Popover open={isOpen} onOpenChange={setIsOpen}>
+        <Calendar
+          onSelect={date => {
+            field.onChange(date);
+            setIsOpen(false); // Close on selection
+          }}
+        />
+      </Popover>
+    );
+  }}
+/>
+```
+
+**Reference**: [src/components/time-entry-form.tsx](src/components/time-entry-form.tsx:146-181)
+
+### Harvest Budget Fields
+
+**CRITICAL**: Harvest has TWO budget fields:
+
+1. **`budget`** (number) - Hours-based (budget_by = "project", "task", "person")
+2. **`cost_budget`** (number) - Monetary (budget_by = "project_cost", "task_fees")
+
+**Form Submission**:
+```typescript
+const isCostBased = budget_by === 'project_cost' || budget_by === 'task_fees';
+const payload = {
+  budget_by,
+  ...(isCostBased ? { cost_budget: value } : { budget: value })
+};
+```
+
+**Display Logic**:
+```typescript
+const budgetValue = isCostBased ? project.cost_budget : project.budget;
+return budgetValue ? `${isCostBased ? '$' : ''}${budgetValue}${isHoursBased ? 'h' : ''}` : '—';
+```
+
+**Reference**:
+- [src/components/admin/forms/project-form-modal.tsx](src/components/admin/forms/project-form-modal.tsx:153-173)
+- [src/app/dashboard/admin/projects/page.tsx](src/app/dashboard/admin/projects/page.tsx:136-156)
 
 ## Gotchas
 

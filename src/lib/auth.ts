@@ -128,7 +128,12 @@ export const auth = betterAuth({
           },
 
           // Map Harvest profile to custom user fields
-          mapProfileToUser: profile => {
+          mapProfileToUser: user => {
+            // IMPORTANT: user is the wrapper object from getUserInfo's return
+            // The actual Harvest profile is in user.data
+            const profile = user.data;
+
+            // Better Auth expects this to return Record<string, any> for additionalFields
             return {
               firstName: profile.first_name,
               lastName: profile.last_name,
@@ -139,7 +144,7 @@ export const auth = betterAuth({
               weeklyCapacity: profile.weekly_capacity,
               defaultHourlyRate: profile.default_hourly_rate,
               costRate: profile.cost_rate,
-            } as any;
+            } as Record<string, unknown>;
           },
         },
       ],
@@ -147,12 +152,20 @@ export const auth = betterAuth({
 
     // Custom session to add Harvest roles and permissions
     customSession(async ({ user, session }) => {
-      // Parse access roles from JSON string
+      // Type assertion for user fields stored in database
       const userWithFields = user as typeof user & {
         accessRoles?: string;
         harvestRoles?: string;
+        firstName?: string;
+        lastName?: string;
+        harvestUserId?: number;
+        isContractor?: boolean;
+        weeklyCapacity?: number;
+        defaultHourlyRate?: number;
+        costRate?: number;
       };
 
+      // Parse access roles from JSON string stored in database
       const accessRoles: string[] = userWithFields.accessRoles
         ? JSON.parse(userWithFields.accessRoles)
         : [];
@@ -169,10 +182,13 @@ export const auth = betterAuth({
       return {
         user: {
           ...user,
-          harvestUserId: (user as any).harvestUserId, // Explicitly include for TypeScript
+          firstName: userWithFields.firstName,
+          lastName: userWithFields.lastName,
+          harvestUserId: userWithFields.harvestUserId,
           accessRoles,
           harvestRoles,
           primaryRole,
+          isContractor: userWithFields.isContractor,
           permissions,
         },
         session,

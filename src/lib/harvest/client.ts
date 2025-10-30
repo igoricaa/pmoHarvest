@@ -23,6 +23,19 @@ import type {
   HarvestUser,
   HarvestExpenseCategoryResponse,
   TimeReportResponse,
+  CreateUserInput,
+  UpdateUserInput,
+  HarvestClient as HarvestClientType,
+  HarvestClientResponse,
+  CreateClientInput,
+  UpdateClientInput,
+  CreateProjectInput,
+  UpdateProjectInput,
+  HarvestUserAssignment,
+  HarvestUserAssignmentResponse,
+  CreateUserAssignmentInput,
+  UpdateUserAssignmentInput,
+  HarvestProjectAssignmentResponse,
 } from '@/types/harvest';
 
 const HARVEST_API_BASE_URL = 'https://api.harvestapp.com/v2';
@@ -123,8 +136,8 @@ export class HarvestClient {
     return response.data;
   }
 
-  async getCurrentUserProjectAssignments(): Promise<HarvestProjectResponse> {
-    const response = await this.client.get<HarvestProjectResponse>(
+  async getCurrentUserProjectAssignments(): Promise<HarvestProjectAssignmentResponse> {
+    const response = await this.client.get<HarvestProjectAssignmentResponse>(
       `/users/me/project_assignments`
     );
     return response.data;
@@ -147,11 +160,11 @@ export class HarvestClient {
 
   async getCurrentUserTaskAssignments(projectId: number): Promise<HarvestTaskAssignmentResponse> {
     // Fetch user's project assignments which include task_assignments
-    const response = await this.client.get<any>(`/users/me/project_assignments`);
+    const response = await this.client.get<HarvestProjectAssignmentResponse>(`/users/me/project_assignments`);
 
     // Find the specific project assignment
     const projectAssignment = response.data.project_assignments?.find(
-      (pa: any) => pa.project.id === projectId
+      pa => pa.project.id === projectId
     );
 
     if (!projectAssignment) {
@@ -346,6 +359,119 @@ export class HarvestClient {
       params,
     });
     return response.data;
+  }
+
+  // ============================================================================
+  // Admin - Users Management
+  // ============================================================================
+
+  async createUser(input: CreateUserInput): Promise<HarvestUser> {
+    const response = await this.client.post<HarvestUser>('/users', input);
+    return response.data;
+  }
+
+  async updateUser(userId: number, input: UpdateUserInput): Promise<HarvestUser> {
+    const response = await this.client.patch<HarvestUser>(`/users/${userId}`, input);
+    return response.data;
+  }
+
+  async deleteUser(userId: number): Promise<void> {
+    await this.client.delete(`/users/${userId}`);
+  }
+
+  // ============================================================================
+  // Admin - Clients Management
+  // ============================================================================
+
+  async getClients(params?: { is_active?: boolean; updated_since?: string; page?: number; per_page?: number }): Promise<HarvestClientResponse> {
+    const response = await this.client.get<HarvestClientResponse>('/clients', { params });
+    return response.data;
+  }
+
+  async getClient(clientId: number): Promise<HarvestClientType> {
+    const response = await this.client.get<HarvestClientType>(`/clients/${clientId}`);
+    return response.data;
+  }
+
+  async createClient(input: CreateClientInput): Promise<HarvestClientType> {
+    const response = await this.client.post<HarvestClientType>('/clients', input);
+    return response.data;
+  }
+
+  async updateClient(clientId: number, input: UpdateClientInput): Promise<HarvestClientType> {
+    const response = await this.client.patch<HarvestClientType>(`/clients/${clientId}`, input);
+    return response.data;
+  }
+
+  async deleteClient(clientId: number): Promise<void> {
+    await this.client.delete(`/clients/${clientId}`);
+  }
+
+  // ============================================================================
+  // Admin - Projects Management
+  // ============================================================================
+
+  async createProject(input: CreateProjectInput): Promise<HarvestProject> {
+    const response = await this.client.post<HarvestProject>('/projects', input);
+    return response.data;
+  }
+
+  async updateProject(projectId: number, input: UpdateProjectInput): Promise<HarvestProject> {
+    const response = await this.client.patch<HarvestProject>(`/projects/${projectId}`, input);
+    return response.data;
+  }
+
+  async deleteProject(projectId: number): Promise<void> {
+    await this.client.delete(`/projects/${projectId}`);
+  }
+
+  // ============================================================================
+  // Admin - User Assignments
+  // ============================================================================
+
+  async getProjectUserAssignments(
+    projectId: number,
+    params?: { is_active?: boolean; page?: number; per_page?: number }
+  ): Promise<HarvestUserAssignmentResponse> {
+    const response = await this.client.get<HarvestUserAssignmentResponse>(
+      `/projects/${projectId}/user_assignments`,
+      { params }
+    );
+    return response.data;
+  }
+
+  async getUserAssignment(projectId: number, assignmentId: number): Promise<HarvestUserAssignment> {
+    const response = await this.client.get<HarvestUserAssignment>(
+      `/projects/${projectId}/user_assignments/${assignmentId}`
+    );
+    return response.data;
+  }
+
+  async createUserAssignment(
+    projectId: number,
+    input: CreateUserAssignmentInput
+  ): Promise<HarvestUserAssignment> {
+    const response = await this.client.post<HarvestUserAssignment>(
+      `/projects/${projectId}/user_assignments`,
+      input
+    );
+    return response.data;
+  }
+
+  async updateUserAssignment(
+    projectId: number,
+    assignmentId: number,
+    input: UpdateUserAssignmentInput
+  ): Promise<HarvestUserAssignment> {
+    const response = await this.client.patch<HarvestUserAssignment>(
+      `/projects/${projectId}/user_assignments/${assignmentId}`,
+      input
+    );
+    return response.data;
+  }
+
+  async deleteUserAssignment(projectId: number, assignmentId: number): Promise<void> {
+    await this.client.delete(`/projects/${projectId}/user_assignments/${assignmentId}`);
   }
 }
 

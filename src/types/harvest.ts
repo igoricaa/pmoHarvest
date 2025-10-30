@@ -20,7 +20,8 @@ export interface HarvestUser {
   weekly_capacity: number;
   default_hourly_rate: number;
   cost_rate: number;
-  roles: string[];
+  roles: string[]; // Job titles (e.g., "Developer", "Designer", "Product Manager")
+  access_roles: string[]; // Permission levels (e.g., "administrator", "manager", "member")
   avatar_url: string;
 }
 
@@ -48,12 +49,14 @@ export interface HarvestClient {
   id: number;
   name: string;
   currency: string;
+  is_active: boolean;
+  address?: string;
 }
 
 export interface HarvestProject {
   id: number;
   name: string;
-  code: string;
+  code: string | null;
   is_active: boolean;
   is_billable: boolean;
   is_fixed_fee: boolean;
@@ -450,3 +453,168 @@ export interface ProjectQueryParams extends PaginationParams {
   client_id?: number;
   updated_since?: string; // ISO 8601 format
 }
+
+// ============================================================================
+// Admin Types - Users Management
+// ============================================================================
+
+export interface CreateUserInput {
+  first_name: string;
+  last_name: string;
+  email: string;
+  roles?: string[]; // Job titles (e.g., ["Developer"], ["Designer", "Product Manager"])
+  access_roles?: string[]; // Permission levels: ['member'], ['manager'], or ['administrator']
+  is_contractor?: boolean;
+  weekly_capacity?: number; // in seconds (e.g., 126000 = 35 hours)
+  default_hourly_rate?: number;
+  cost_rate?: number;
+  timezone?: string;
+}
+
+export type UpdateUserInput = Partial<CreateUserInput>;
+
+// ============================================================================
+// Admin Types - Clients Management
+// ============================================================================
+
+export interface HarvestClientResponse {
+  clients: HarvestClient[];
+  per_page: number;
+  total_pages: number;
+  total_entries: number;
+  next_page: number | null;
+  previous_page: number | null;
+  page: number;
+  links: {
+    first: string;
+    next: string | null;
+    previous: string | null;
+    last: string;
+  };
+}
+
+export interface CreateClientInput {
+  name: string;
+  currency?: string;
+  is_active?: boolean;
+  address?: string;
+}
+
+export type UpdateClientInput = Partial<CreateClientInput>;
+
+// ============================================================================
+// Admin Types - Projects Management
+// ============================================================================
+
+export interface CreateProjectInput {
+  client_id: number;
+  name: string;
+  code: string;
+  is_billable?: boolean;
+  bill_by?: 'Project' | 'Tasks' | 'People' | 'None';
+  budget_by?: 'project' | 'project_cost' | 'task' | 'task_fees' | 'person' | 'none';
+  budget?: number;
+  budget_is_monthly?: boolean;
+  notify_when_over_budget?: boolean;
+  over_budget_notification_percentage?: number;
+  starts_on?: string; // YYYY-MM-DD
+  ends_on?: string; // YYYY-MM-DD
+  notes?: string;
+}
+
+export type UpdateProjectInput = Partial<Omit<CreateProjectInput, 'client_id'>>;
+
+// ============================================================================
+// Admin Types - User Assignments
+// ============================================================================
+
+export interface HarvestUserAssignment {
+  id: number;
+  user: {
+    id: number;
+    name: string;
+  };
+  project: {
+    id: number;
+    name: string;
+    code: string;
+  };
+  is_active: boolean;
+  is_project_manager: boolean;
+  use_default_rates: boolean;
+  hourly_rate: number | null;
+  budget: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface HarvestUserAssignmentResponse {
+  user_assignments: HarvestUserAssignment[];
+  per_page: number;
+  total_pages: number;
+  total_entries: number;
+  next_page: number | null;
+  previous_page: number | null;
+  page: number;
+  links: {
+    first: string;
+    next: string | null;
+    previous: string | null;
+    last: string;
+  };
+}
+
+export interface CreateUserAssignmentInput {
+  user_id: number;
+  is_active?: boolean;
+  is_project_manager?: boolean;
+  use_default_rates?: boolean;
+  hourly_rate?: number;
+  budget?: number;
+}
+
+export type UpdateUserAssignmentInput = Partial<Omit<CreateUserAssignmentInput, 'user_id'>>;
+
+// ============================================================================
+// Project Assignment Types (for /users/me/project_assignments)
+// ============================================================================
+
+export interface HarvestProjectAssignment {
+  id: number;
+  is_active: boolean;
+  is_project_manager: boolean;
+  use_default_rates: boolean;
+  hourly_rate: number | null;
+  budget: number | null;
+  created_at: string;
+  updated_at: string;
+  project: {
+    id: number;
+    name: string;
+    code: string;
+    is_active: boolean;
+  };
+  task_assignments?: HarvestTaskAssignment[];
+}
+
+export interface HarvestProjectAssignmentResponse {
+  project_assignments: HarvestProjectAssignment[];
+  per_page: number;
+  total_pages: number;
+  total_entries: number;
+  next_page: number | null;
+  previous_page: number | null;
+  page: number;
+  links: {
+    first: string;
+    next: string | null;
+    previous: string | null;
+    last: string;
+  };
+}
+
+// ============================================================================
+// Approval Status
+// ============================================================================
+
+export type ApprovalStatus = 'unsubmitted' | 'submitted' | 'approved';

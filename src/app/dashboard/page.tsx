@@ -158,7 +158,7 @@ export default function DashboardPage() {
           <CardDescription>Your latest time entries and expenses</CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="time" className="w-full">
+          <Tabs defaultValue="time" className="w-full" suppressHydrationWarning>
             <TabsList className="grid w-full max-w-md grid-cols-2">
               <TabsTrigger value="time">Time Entries</TabsTrigger>
               <TabsTrigger value="expenses">Expenses</TabsTrigger>
