@@ -151,6 +151,8 @@ export const auth = betterAuth({
     }),
 
     // Custom session to add Harvest roles and permissions
+    // IMPORTANT: This fetches fresh user data from Harvest API on every session request
+    // to ensure permissions are always up-to-date (leverages 5min cookie cache)
     customSession(async ({ user, session }) => {
       // Type assertion for user fields stored in database
       const userWithFields = user as typeof user & {
@@ -165,15 +167,102 @@ export const auth = betterAuth({
         costRate?: number;
       };
 
-      // Parse access roles from JSON string stored in database
-      const accessRoles: string[] = userWithFields.accessRoles
+      // Initialize with database values (fallback)
+      let accessRoles: string[] = userWithFields.accessRoles
         ? JSON.parse(userWithFields.accessRoles)
         : [];
-      const harvestRoles: string[] = userWithFields.harvestRoles
+      let harvestRoles: string[] = userWithFields.harvestRoles
         ? JSON.parse(userWithFields.harvestRoles)
         : [];
+      let firstName = userWithFields.firstName;
+      let lastName = userWithFields.lastName;
+      let isContractor = userWithFields.isContractor;
+      let weeklyCapacity = userWithFields.weeklyCapacity;
+      let defaultHourlyRate = userWithFields.defaultHourlyRate;
+      let costRate = userWithFields.costRate;
 
-      // Determine primary role
+      // Try to fetch fresh data from Harvest API
+      try {
+        // Get user's Harvest access token from account table using direct SQL query
+        const accountResult = await pool.query(
+          'SELECT "accessToken" FROM account WHERE "userId" = $1 AND "providerId" = $2 LIMIT 1',
+          [user.id, 'harvest']
+        );
+
+        const accessToken = accountResult.rows[0]?.accessToken;
+
+        if (accessToken) {
+          // Fetch current user data from Harvest API
+          const response = await fetch('https://api.harvestapp.com/v2/users/me', {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              'Harvest-Account-Id': process.env.HARVEST_ACCOUNT_ID!,
+              'User-Agent': 'PMO Harvest Portal (session)',
+            },
+          });
+
+          if (response.ok) {
+            const profile = await response.json();
+
+            // Parse fresh roles from Harvest
+            const freshAccessRoles = profile.access_roles || [];
+            const freshHarvestRoles = profile.roles || [];
+
+            // Check if roles have changed
+            const rolesChanged =
+              JSON.stringify(freshAccessRoles) !== JSON.stringify(accessRoles) ||
+              JSON.stringify(freshHarvestRoles) !== JSON.stringify(harvestRoles);
+
+            // Update local variables with fresh data
+            accessRoles = freshAccessRoles;
+            harvestRoles = freshHarvestRoles;
+            firstName = profile.first_name;
+            lastName = profile.last_name;
+            isContractor = profile.is_contractor || false;
+            weeklyCapacity = profile.weekly_capacity;
+            defaultHourlyRate = profile.default_hourly_rate;
+            costRate = profile.cost_rate;
+
+            // Update database if roles changed (async, don't block session return)
+            if (rolesChanged) {
+              pool
+                .query(
+                  `UPDATE "user" SET
+                    "accessRoles" = $1,
+                    "harvestRoles" = $2,
+                    "firstName" = $3,
+                    "lastName" = $4,
+                    "isContractor" = $5,
+                    "weeklyCapacity" = $6,
+                    "defaultHourlyRate" = $7,
+                    "costRate" = $8,
+                    "updatedAt" = NOW()
+                  WHERE id = $9`,
+                  [
+                    JSON.stringify(freshAccessRoles),
+                    JSON.stringify(freshHarvestRoles),
+                    profile.first_name,
+                    profile.last_name,
+                    profile.is_contractor || false,
+                    profile.weekly_capacity,
+                    profile.default_hourly_rate,
+                    profile.cost_rate,
+                    user.id,
+                  ]
+                )
+                .catch((err: unknown) => {
+                  console.error('Failed to update user with fresh Harvest data:', err);
+                });
+            }
+          }
+          // If fetch fails (401, 403, network error), fall back to database values
+        }
+      } catch (error) {
+        // Log error but don't fail the session - use database values as fallback
+        console.error('Error fetching fresh Harvest data in customSession:', error);
+      }
+
+      // Determine primary role from fresh/fallback data
       const primaryRole: string = accessRoles[0] || 'member';
 
       // Define permissions based on Harvest access roles
@@ -182,13 +271,16 @@ export const auth = betterAuth({
       return {
         user: {
           ...user,
-          firstName: userWithFields.firstName,
-          lastName: userWithFields.lastName,
+          firstName,
+          lastName,
           harvestUserId: userWithFields.harvestUserId,
           accessRoles,
           harvestRoles,
           primaryRole,
-          isContractor: userWithFields.isContractor,
+          isContractor,
+          weeklyCapacity,
+          defaultHourlyRate,
+          costRate,
           permissions,
         },
         session,

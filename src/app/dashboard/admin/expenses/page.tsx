@@ -2,14 +2,23 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { format } from 'date-fns';
-import { Loader2, Trash2, RefreshCw, Paperclip, Lock } from 'lucide-react';
+import { Loader2, Trash2, RefreshCw, Paperclip, Lock, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { useSession } from '@/lib/auth-client';
 import { useIsAdmin, useIsAdminOrManager } from '@/lib/admin-utils';
 import { useExpenses, useDeleteExpense, useManagedProjects } from '@/hooks/use-harvest';
+import { ApprovalStatusBadge } from '@/components/admin/approval-status-badge';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -26,7 +35,12 @@ export default function AdminExpensesPage() {
   const { data: session } = useSession();
   const isAdminOrManager = useIsAdminOrManager();
   const isAdmin = useIsAdmin();
+
+  // Filters
   const [searchQuery, setSearchQuery] = useState('');
+  const [approvalFilter, setApprovalFilter] = useState<
+    'all' | 'unsubmitted' | 'submitted' | 'approved'
+  >('all');
 
   // Data hooks must be called before early returns
   const { data: managedProjectIds } = useManagedProjects();
@@ -40,7 +54,11 @@ export default function AdminExpensesPage() {
     isLoading: isLoadingExpenses,
     refetch: refetchExpenses,
     isFetching: isFetchingExpenses,
-  } = useExpenses({ from, to });
+  } = useExpenses({
+    from,
+    to,
+    approval_status: approvalFilter === 'all' ? undefined : approvalFilter,
+  });
   const deleteMutation = useDeleteExpense();
 
   // Filter expenses based on manager's projects (must be before early returns)
@@ -98,6 +116,7 @@ export default function AdminExpensesPage() {
   };
 
   const totalCost = filteredExpenses.reduce((sum, expense) => sum + expense.total_cost, 0);
+  const pendingCount = filteredExpenses.filter(e => e.approval_status === 'submitted').length;
 
   return (
     <div className="space-y-6">
@@ -108,23 +127,35 @@ export default function AdminExpensesPage() {
             {isAdmin ? 'All team expenses' : 'Expenses for your managed projects'}
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            refetchExpenses().then(result => {
-              if (result.isError) {
-                toast.error('Failed to refresh expenses');
-              } else {
-                toast.success('Expenses refreshed');
-              }
-            });
-          }}
-          disabled={isFetchingExpenses}
-        >
-          <RefreshCw className={cn('mr-2 h-4 w-4', isFetchingExpenses && 'animate-spin')} />
-          {isFetchingExpenses ? 'Refreshing...' : 'Refresh'}
-        </Button>
+
+        <div className="flex items-center gap-3">
+          {pendingCount > 0 && (
+            <Button asChild variant="outline">
+              <Link href="/dashboard/admin/approvals/expenses">
+                <AlertCircle className="mr-2 h-4 w-4" />
+                {pendingCount} Pending Approval{pendingCount !== 1 ? 's' : ''}
+              </Link>
+            </Button>
+          )}
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              refetchExpenses().then(result => {
+                if (result.isError) {
+                  toast.error('Failed to refresh expenses');
+                } else {
+                  toast.success('Expenses refreshed');
+                }
+              });
+            }}
+            disabled={isFetchingExpenses}
+          >
+            <RefreshCw className={cn('mr-2 h-4 w-4', isFetchingExpenses && 'animate-spin')} />
+            {isFetchingExpenses ? 'Refreshing...' : 'Refresh'}
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -140,6 +171,23 @@ export default function AdminExpensesPage() {
                 className="w-full px-3 py-2 border rounded-md"
               />
             </div>
+
+            <Select
+              value={approvalFilter}
+              onValueChange={(v: 'all' | 'unsubmitted' | 'submitted' | 'approved') =>
+                setApprovalFilter(v)
+              }
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                <SelectItem value="unsubmitted">Unsubmitted</SelectItem>
+                <SelectItem value="submitted">Pending Approval</SelectItem>
+                <SelectItem value="approved">Approved</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>
@@ -194,17 +242,7 @@ export default function AdminExpensesPage() {
                       </TableCell>
                       <TableCell>{expense.user.name}</TableCell>
                       <TableCell>
-                        <Badge
-                          variant={
-                            expense.is_billed
-                              ? 'default'
-                              : expense.is_locked
-                                ? 'outline'
-                                : 'secondary'
-                          }
-                        >
-                          {expense.is_billed ? 'Billed' : expense.is_locked ? 'Locked' : 'Pending'}
-                        </Badge>
+                        <ApprovalStatusBadge status={expense.approval_status} />
                       </TableCell>
                       <TableCell className="max-w-xs truncate">{expense.notes || '—'}</TableCell>
                       <TableCell className="text-center">

@@ -157,6 +157,7 @@ export interface HarvestTimeEntry {
   locked_reason: string | null;
   is_closed: boolean;
   is_billed: boolean;
+  approval_status: 'unsubmitted' | 'submitted' | 'approved';
   timer_started_at: string | null;
   started_time: string | null;
   ended_time: string | null;
@@ -288,6 +289,7 @@ export interface HarvestExpense {
   is_closed: boolean;
   is_locked: boolean;
   is_billed: boolean;
+  approval_status: 'unsubmitted' | 'submitted' | 'approved';
   locked_reason: string | null;
   created_at: string;
   updated_at: string;
@@ -433,6 +435,7 @@ export interface TimeEntryQueryParams extends PaginationParams {
   task_id?: number;
   is_billed?: boolean;
   is_running?: boolean;
+  approval_status?: 'unsubmitted' | 'submitted' | 'approved';
   updated_since?: string; // ISO 8601 format
   from?: string; // YYYY-MM-DD
   to?: string; // YYYY-MM-DD
@@ -443,6 +446,7 @@ export interface ExpenseQueryParams extends PaginationParams {
   client_id?: number;
   project_id?: number;
   is_billed?: boolean;
+  approval_status?: 'unsubmitted' | 'submitted' | 'approved';
   updated_since?: string; // ISO 8601 format
   from?: string; // YYYY-MM-DD
   to?: string; // YYYY-MM-DD

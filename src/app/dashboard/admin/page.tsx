@@ -31,6 +31,9 @@ export default function AdminDashboardPage() {
   const isAdminOrManager = useIsAdminOrManager();
   const isAdmin = useIsAdmin();
 
+  // Get managed project IDs for managers (MUST be before early returns)
+  const { data: managedProjectIds } = useManagedProjects();
+
   // Redirect if not admin or manager (using useEffect to avoid React render error)
   useEffect(() => {
     if (session && isAdminOrManager === false) {
@@ -47,9 +50,6 @@ export default function AdminDashboardPage() {
   if (isAdminOrManager === false) {
     return null;
   }
-
-  // Get managed project IDs for managers
-  const { data: managedProjectIds } = useManagedProjects();
 
   // Get data from last 30 days
   const from = format(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd');

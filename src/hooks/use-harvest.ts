@@ -83,7 +83,12 @@ export const harvestKeys = {
 // Time Entries
 // ============================================================================
 
-export function useTimeEntries(params?: { from?: string; to?: string; user_id?: number }) {
+export function useTimeEntries(params?: {
+  from?: string;
+  to?: string;
+  user_id?: number;
+  approval_status?: 'unsubmitted' | 'submitted' | 'approved';
+}) {
   return useQuery({
     queryKey: harvestKeys.timeEntries(params),
     queryFn: async () => {
@@ -313,7 +318,12 @@ export function useDeleteTimeEntry() {
 // Expenses
 // ============================================================================
 
-export function useExpenses(params?: { from?: string; to?: string; user_id?: number }) {
+export function useExpenses(params?: {
+  from?: string;
+  to?: string;
+  user_id?: number;
+  approval_status?: 'unsubmitted' | 'submitted' | 'approved';
+}) {
   return useQuery({
     queryKey: harvestKeys.expenses(params),
     queryFn: async () => {

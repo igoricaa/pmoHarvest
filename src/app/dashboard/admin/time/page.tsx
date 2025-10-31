@@ -2,14 +2,23 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { format } from 'date-fns';
-import { Loader2, Trash2, RefreshCw, Lock } from 'lucide-react';
+import { Loader2, Trash2, RefreshCw, Lock, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { useSession } from '@/lib/auth-client';
 import { useIsAdmin, useIsAdminOrManager } from '@/lib/admin-utils';
 import { useTimeEntries, useDeleteTimeEntry, useManagedProjects } from '@/hooks/use-harvest';
+import { ApprovalStatusBadge } from '@/components/admin/approval-status-badge';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -26,7 +35,12 @@ export default function AdminTimePage() {
   const { data: session } = useSession();
   const isAdminOrManager = useIsAdminOrManager();
   const isAdmin = useIsAdmin();
+
+  // Filters
   const [searchQuery, setSearchQuery] = useState('');
+  const [approvalFilter, setApprovalFilter] = useState<
+    'all' | 'unsubmitted' | 'submitted' | 'approved'
+  >('all');
 
   // Data hooks must be called before early returns
   const { data: managedProjectIds } = useManagedProjects();
@@ -40,7 +54,11 @@ export default function AdminTimePage() {
     isLoading: isLoadingTimeEntries,
     refetch: refetchTimeEntries,
     isFetching: isFetchingTimeEntries,
-  } = useTimeEntries({ from, to });
+  } = useTimeEntries({
+    from,
+    to,
+    approval_status: approvalFilter === 'all' ? undefined : approvalFilter,
+  });
   const deleteMutation = useDeleteTimeEntry();
 
   // Filter time entries based on manager's projects (must be before early returns)
@@ -97,6 +115,7 @@ export default function AdminTimePage() {
   };
 
   const totalHours = filteredTimeEntries.reduce((sum, entry) => sum + entry.hours, 0);
+  const pendingCount = filteredTimeEntries.filter(e => e.approval_status === 'submitted').length;
 
   return (
     <div className="space-y-6">
@@ -107,23 +126,35 @@ export default function AdminTimePage() {
             {isAdmin ? 'All team time entries' : 'Time entries for your managed projects'}
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            refetchTimeEntries().then(result => {
-              if (result.isError) {
-                toast.error('Failed to refresh time entries');
-              } else {
-                toast.success('Time entries refreshed');
-              }
-            });
-          }}
-          disabled={isFetchingTimeEntries}
-        >
-          <RefreshCw className={cn('mr-2 h-4 w-4', isFetchingTimeEntries && 'animate-spin')} />
-          {isFetchingTimeEntries ? 'Refreshing...' : 'Refresh'}
-        </Button>
+
+        <div className="flex items-center gap-3">
+          {pendingCount > 0 && (
+            <Button asChild variant="outline">
+              <Link href="/dashboard/admin/approvals/time">
+                <AlertCircle className="mr-2 h-4 w-4" />
+                {pendingCount} Pending Approval{pendingCount !== 1 ? 's' : ''}
+              </Link>
+            </Button>
+          )}
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              refetchTimeEntries().then(result => {
+                if (result.isError) {
+                  toast.error('Failed to refresh time entries');
+                } else {
+                  toast.success('Time entries refreshed');
+                }
+              });
+            }}
+            disabled={isFetchingTimeEntries}
+          >
+            <RefreshCw className={cn('mr-2 h-4 w-4', isFetchingTimeEntries && 'animate-spin')} />
+            {isFetchingTimeEntries ? 'Refreshing...' : 'Refresh'}
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -139,6 +170,23 @@ export default function AdminTimePage() {
                 className="w-full px-3 py-2 border rounded-md"
               />
             </div>
+
+            <Select
+              value={approvalFilter}
+              onValueChange={(v: 'all' | 'unsubmitted' | 'submitted' | 'approved') =>
+                setApprovalFilter(v)
+              }
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                <SelectItem value="unsubmitted">Unsubmitted</SelectItem>
+                <SelectItem value="submitted">Pending Approval</SelectItem>
+                <SelectItem value="approved">Approved</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>
@@ -192,17 +240,7 @@ export default function AdminTimePage() {
                       </TableCell>
                       <TableCell>{entry.user.name}</TableCell>
                       <TableCell>
-                        <Badge
-                          variant={
-                            entry.is_billed
-                              ? 'default'
-                              : entry.is_locked
-                                ? 'outline'
-                                : 'secondary'
-                          }
-                        >
-                          {entry.is_billed ? 'Billed' : entry.is_locked ? 'Locked' : 'Pending'}
-                        </Badge>
+                        <ApprovalStatusBadge status={entry.approval_status} />
                       </TableCell>
                       <TableCell className="max-w-xs truncate">{entry.notes || '—'}</TableCell>
                       <TableCell className="text-right">

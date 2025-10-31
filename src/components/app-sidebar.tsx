@@ -10,6 +10,7 @@ import {
   Briefcase,
   DollarSign,
   BarChart,
+  CheckSquare,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -34,6 +35,7 @@ const navigation = [
 
 const adminNavigation = [
   { name: 'Admin Dashboard', href: '/dashboard/admin', icon: BarChart },
+  // { name: 'Approvals', href: '/dashboard/admin/approvals', icon: CheckSquare },
   { name: 'Time Management', href: '/dashboard/admin/time', icon: Clock },
   { name: 'Expense Management', href: '/dashboard/admin/expenses', icon: Receipt },
   { name: 'Projects', href: '/dashboard/admin/projects', icon: Briefcase },
