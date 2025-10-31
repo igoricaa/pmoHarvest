@@ -332,7 +332,59 @@ queryClient.invalidateQueries({
 
 ---
 
-## 🧪 Phase 5: Testing (NOT STARTED - 0%)
+## ✅ Phase 5: Approval Workflows (COMPLETE - 100%)
+
+### Weekly Timesheet Approval System ✅
+- [x] `/dashboard/admin/approvals/page.tsx` - Approvals hub with navigation to time/expenses (~100 lines)
+- [x] `/dashboard/admin/approvals/time/page.tsx` - Weekly timesheet list grouped by user (~150 lines)
+- [x] `/dashboard/admin/approvals/time/[userId]/[weekStart]/page.tsx` - User-specific timesheet detail (~155 lines)
+- [x] Timesheet grid component with project/task/hours breakdown by day
+- [x] Approval actions (approve/reject individual or bulk)
+- [x] Manager filtering (only see timesheets for managed projects)
+
+### Weekly Expense Approval System ✅
+- [x] `/dashboard/admin/approvals/expenses/page.tsx` - Weekly expense list grouped by user (~150 lines)
+- [x] `/dashboard/admin/approvals/expenses/[userId]/[weekStart]/page.tsx` - User-specific expense detail (~155 lines)
+- [x] Expense table with receipt viewing and approval actions
+- [x] Manager filtering (only see expenses for managed projects)
+
+### Approval Components (4 components, ~814 lines) ✅
+- [x] `src/components/admin/approval-status-badge.tsx` - Status badges with color coding (~45 lines)
+  - Pending (yellow), Approved (green), Rejected (red)
+  - Used across all approval pages
+
+- [x] `src/components/admin/timesheet-grid.tsx` - Weekly breakdown grid (~233 lines)
+  - Project/task rows × day columns
+  - Daily hours display
+  - Total hours calculation
+  - Used in timesheet detail pages
+
+- [x] `src/components/admin/expense-timesheet-table.tsx` - Approval table (~270 lines)
+  - Sortable columns (date, project, hours/cost, status)
+  - Inline approve/reject buttons
+  - Receipt viewing for expenses
+  - Bulk selection support
+
+- [x] `src/components/admin/pending-timesheets-list.tsx` - Pending submissions list (~266 lines)
+  - Groups entries by user and week
+  - Summary cards with total hours/cost
+  - Quick navigation to detail pages
+  - Manager-filtered data
+
+**Key Features Implemented:**
+- ✅ Weekly grouping (Monday-Sunday) for easier review
+- ✅ User-specific drill-down pages with detailed breakdowns
+- ✅ Manager filtering (managers only see managed project data)
+- ✅ Bulk approve/reject actions
+- ✅ Status tracking: pending → approved/rejected
+- ✅ Receipt viewing for expenses
+- ✅ Responsive design with mobile support
+
+**Total Phase 5:** 5 pages (~505 lines) + 4 components (~814 lines) = ~1,319 lines
+
+---
+
+## 🧪 Phase 6: Testing (NOT STARTED - 0%)
 
 - [ ] Test admin account (full access)
 - [ ] Test manager account (filtered to managed projects only)
@@ -351,16 +403,17 @@ queryClient.invalidateQueries({
 | Phase 2: React Query | ✅ Complete | ~310 lines | 100% |
 | Phase 3: Components | ✅ Complete | ~1,265 lines | 100% |
 | Phase 4: Pages | ✅ Complete | ~1,680 lines | 100% |
-| Phase 5: Testing | ⏸️ Not Started | - | 0% |
-| **TOTAL** | **95%** | **4,485 / ~4,685 lines** | **95%** |
+| Phase 5: Approvals | ✅ Complete | ~1,319 lines | 100% |
+| Phase 6: Testing | ⏸️ Not Started | - | 0% |
+| **TOTAL** | **~98%** | **5,804 / ~6,000 lines** | **~98%** |
 
 ---
 
 ## 🎯 Next Step
 
-**Move to Phase 5: Testing**
+**Move to Phase 6: Testing**
 
-**Phase 4 Complete!** All 8 admin pages have been implemented with full CRUD functionality, manager filtering, and permission checks.
+**Phase 5 Complete!** Approval workflows have been fully implemented with weekly grouping, user-specific drill-downs, and manager filtering.
 
 **Next tasks:**
 1. Test admin account functionality:

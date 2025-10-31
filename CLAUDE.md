@@ -33,6 +33,31 @@ pnpm start            # Production server
 
 **Key Point**: Each user has their own OAuth token. `HARVEST_ACCOUNT_ID` is shared (org ID).
 
+### Session Permission Refresh
+
+**IMPORTANT**: User permissions are fetched fresh from Harvest API on every session request (protected by 5-minute cookie cache).
+
+**How It Works**:
+1. `customSession` plugin queries the `account` table for user's access token
+2. Calls Harvest API `/users/me` to fetch current roles and permissions
+3. Compares fresh data with cached database values
+4. Updates session immediately with fresh data
+5. Asynchronously updates database if roles changed
+6. Falls back to database values if Harvest API is unreachable
+
+**Performance**:
+- Cookie cache limits API calls to once per 5 minutes per user
+- Database update is non-blocking (doesn't delay session response)
+- Graceful degradation if Harvest API is down
+
+**Benefits**:
+- ✅ Permission changes reflect immediately after cache expires (max 5 min)
+- ✅ No need to log out/in to see role changes
+- ✅ Always shows current Harvest permissions
+- ✅ Resilient to temporary API failures
+
+**Reference**: [src/lib/auth.ts:153-263](src/lib/auth.ts#L153-L263)
+
 ### Session Structure
 
 ```typescript
@@ -282,6 +307,90 @@ Access tokens expire after 14 days. Auto-refresh via:
 
 Manual refresh: `refreshUserHarvestToken()` from `@/lib/auth-utils`
 
+### Admin Features & Approval Workflows
+
+**Overview**: Admin/manager dashboard for reviewing and approving team timesheets and expenses.
+
+**Architecture**:
+- Weekly grouping (ISO weeks: Monday-Sunday)
+- Manager filtering (only see managed projects)
+- Bulk actions (approve/reject multiple items)
+- Status tracking (pending/approved/rejected)
+
+**Routes**:
+
+1. [/dashboard/admin/approvals](src/app/dashboard/admin/approvals/page.tsx) - Approvals hub (~100 lines)
+2. [/dashboard/admin/approvals/time](src/app/dashboard/admin/approvals/time/page.tsx) - Weekly timesheet list (~150 lines)
+3. [/dashboard/admin/approvals/time/[weekId]](src/app/dashboard/admin/approvals/time/[weekId]/page.tsx) - Week detail (~180 lines)
+4. [/dashboard/admin/approvals/expenses](src/app/dashboard/admin/approvals/expenses/page.tsx) - Expense approvals (~60 lines)
+5. [/dashboard/admin/approvals/expenses/[weekId]](src/app/dashboard/admin/approvals/expenses/[weekId]/page.tsx) - Expense week detail (~15 lines)
+
+**Components**:
+
+1. [ApprovalStatusBadge](src/components/admin/approval-status-badge.tsx) - Status badges (~40 lines)
+2. [TimesheetGrid](src/components/admin/timesheet-grid.tsx) - Weekly grid view (~475 lines)
+3. [ExpenseTimesheetTable](src/components/admin/expense-timesheet-table.tsx) - Expense table (~180 lines)
+4. [PendingTimesheetsList](src/components/admin/pending-timesheets-list.tsx) - Pending list (~120 lines)
+
+**Manager Filtering Pattern**:
+
+```typescript
+import { useManagedProjects } from '@/hooks/use-harvest';
+
+const { data: session } = useSession();
+const { data: managedProjectIds } = useManagedProjects();
+
+const isManager = session?.user?.accessRoles?.includes('manager');
+const isAdmin = session?.user?.accessRoles?.includes('administrator');
+
+// Filter time entries by managed projects
+const filteredEntries = useMemo(() => {
+  if (!entries || isAdmin) return entries; // Admins see all
+  if (isManager && managedProjectIds) {
+    return entries.filter(entry => managedProjectIds.includes(entry.project.id));
+  }
+  return entries;
+}, [entries, isManager, isAdmin, managedProjectIds]);
+
+// Group by user
+const entriesByUser = useMemo(() => {
+  const grouped = new Map<number, TimeEntry[]>();
+  filteredEntries?.forEach(entry => {
+    const userId = entry.user.id;
+    if (!grouped.has(userId)) grouped.set(userId, []);
+    grouped.get(userId)!.push(entry);
+  });
+  return grouped;
+}, [filteredEntries]);
+```
+
+**Weekly Grouping Utility**:
+
+[src/lib/timesheet-utils.ts](src/lib/timesheet-utils.ts) - ISO week calculations (~75 lines)
+
+```typescript
+import { getWeekId, getWeekRange, formatWeekId } from '@/lib/timesheet-utils';
+
+// Get current week
+const weekId = getWeekId(new Date()); // "2024-W05"
+
+// Get date range for week
+const { start, end } = getWeekRange('2024-W05');
+// start: Date (Monday), end: Date (Sunday)
+
+// Format for display
+const label = formatWeekId('2024-W05'); // "Week of Feb 5, 2024"
+```
+
+**Key Features**:
+- ✅ ISO week grouping (Monday-Sunday)
+- ✅ Manager filtering (only managed projects)
+- ✅ Bulk approve/reject (future)
+- ✅ Status badges (pending/approved/rejected)
+- ✅ Project/task breakdown
+- ✅ Daily hours grid view
+- ✅ Receipt viewing (expenses)
+
 ## Environment Variables
 
 ```bash
@@ -313,6 +422,8 @@ UPLOADTHING_APP_ID=              # Receipt uploads
 11. [src/components/expense-form.tsx](src/components/expense-form.tsx) - Reusable expense form
 12. [src/components/time-entry-form.tsx](src/components/time-entry-form.tsx) - Reusable time entry form
 13. [src/components/admin/forms/project-form-modal.tsx](src/components/admin/forms/project-form-modal.tsx) - Project form with budget field handling
+14. [src/components/admin/timesheet-grid.tsx](src/components/admin/timesheet-grid.tsx) - Weekly timesheet grid view
+15. [src/lib/timesheet-utils.ts](src/lib/timesheet-utils.ts) - ISO week calculations
 
 ## Common Patterns
 

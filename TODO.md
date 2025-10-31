@@ -18,6 +18,22 @@ Potential features and improvements for future development.
 - ✅ Modals reduced from ~400 lines to ~35 lines each (90% reduction)
 - ✅ Single source of truth for form logic and validation
 
+### Session Permission Refresh ✅
+- ✅ Fresh permission fetch from Harvest API on every session request
+- ✅ 5-minute cookie cache for performance optimization
+- ✅ Automatic database sync when roles change
+- ✅ Graceful fallback to cached data if API fails
+- ✅ No logout/login required for permission updates to reflect
+
+### Approval Workflows ✅
+- ✅ Weekly timesheet approvals (ISO weeks: Monday-Sunday)
+- ✅ Expense approvals by week
+- ✅ Manager filtering (only see managed projects)
+- ✅ Status tracking (pending/approved/rejected)
+- ✅ Daily hours grid view
+- ✅ Bulk user list with totals
+- ✅ Reusable components (TimesheetGrid, ExpenseTimesheetTable)
+
 ---
 
 ## Phase 1: Admin Features

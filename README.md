@@ -44,7 +44,8 @@ HARVEST_ACCOUNT_ID=              # From id.getharvest.com/developers
 - **User Data**: Sourced from Harvest API (not stored locally)
 - **Multi-User**: Each consultant has their own OAuth token
 - **API Routes**: Proxy to Harvest API with user-specific tokens
-- **Sessions**: Include Harvest roles and permissions
+- **Sessions**: Include Harvest roles and permissions (refreshed from API every 5 minutes)
+- **Admin Features**: Project/team/client management, timesheet/expense approvals (weekly view)
 
 See [CLAUDE.md](CLAUDE.md) for technical details and [SETUP.md](SETUP.md) for setup guide.
 
