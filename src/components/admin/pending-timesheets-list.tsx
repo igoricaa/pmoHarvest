@@ -45,13 +45,13 @@ export function PendingTimesheetsList(props: Props) {
   const uniqueUsers = useMemo(() => {
     if (props.type === 'time') {
       const users = new Map<number, string>();
-      props.timesheets.forEach(ts => {
+      (props as PendingTimesheetsListProps).timesheets.forEach(ts => {
         users.set(ts.userId, ts.userName);
       });
       return Array.from(users.entries()).map(([id, name]) => ({ id, name }));
     } else {
       const users = new Map<number, string>();
-      props.expenseSheets.forEach(es => {
+      (props as PendingExpensesListProps).expenseSheets.forEach(es => {
         users.set(es.userId, es.userName);
       });
       return Array.from(users.entries()).map(([id, name]) => ({ id, name }));
@@ -61,14 +61,16 @@ export function PendingTimesheetsList(props: Props) {
   // Filter timesheets/expenses by selected user
   const filteredData = useMemo(() => {
     if (userFilter === 'all') {
-      return props.type === 'time' ? props.timesheets : props.expenseSheets;
+      return props.type === 'time'
+        ? (props as PendingTimesheetsListProps).timesheets
+        : (props as PendingExpensesListProps).expenseSheets;
     }
 
     const userId = parseInt(userFilter);
     if (props.type === 'time') {
-      return props.timesheets.filter(ts => ts.userId === userId);
+      return (props as PendingTimesheetsListProps).timesheets.filter(ts => ts.userId === userId);
     } else {
-      return props.expenseSheets.filter(es => es.userId === userId);
+      return (props as PendingExpensesListProps).expenseSheets.filter(es => es.userId === userId);
     }
   }, [props, userFilter]);
 
