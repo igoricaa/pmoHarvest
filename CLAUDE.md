@@ -391,6 +391,46 @@ const label = formatWeekId('2024-W05'); // "Week of Feb 5, 2024"
 - ✅ Daily hours grid view
 - ✅ Receipt viewing (expenses)
 
+### Locked Periods & Approval Prevention
+
+**Overview**: Prevents users from selecting locked weeks when creating time entries/expenses.
+
+**How It Works**:
+- Harvest approves entire weeks (Monday-Sunday), not individual dates
+- When a week is approved, all 7 days become locked
+- Users cannot add/edit entries for any day in that week
+
+**Implementation**:
+
+**API Route**: [src/app/api/harvest/locked-periods/route.ts](src/app/api/harvest/locked-periods/route.ts)
+- Fetches locked time entries and expenses (past 1 year)
+- Groups by ISO week (Monday-Sunday)
+- Returns array of week ranges: `{ weekStart: "2024-01-15", weekEnd: "2024-01-21" }`
+
+**Utilities**: [src/lib/locked-period-utils.ts](src/lib/locked-period-utils.ts)
+- `isDateInLockedWeek(date, lockedWeeks)` - Check if date falls in any locked week
+- Used by calendar components to disable locked weeks
+
+**React Hook**: [src/hooks/use-harvest.ts](src/hooks/use-harvest.ts)
+- `useLockedPeriods()` - Fetches locked weeks (5min cache)
+
+**Error Handling**: [src/lib/error-utils.ts](src/lib/error-utils.ts)
+- `formatLockedPeriodError()` - Sanitizes HTML from Harvest error messages
+- Converts: `"You cannot track time to <strong>Project</strong>"` → `"Cannot log time to Project - week is locked"`
+
+**Usage**:
+```typescript
+// In time-entry-form.tsx or expense-form.tsx
+const { data: lockedWeeks = [] } = useLockedPeriods();
+
+<Calendar
+  disabled={date =>
+    date > new Date() ||
+    isDateInLockedWeek(date, lockedWeeks)
+  }
+/>
+```
+
 ## Environment Variables
 
 ```bash
@@ -424,6 +464,9 @@ UPLOADTHING_APP_ID=              # Receipt uploads
 13. [src/components/admin/forms/project-form-modal.tsx](src/components/admin/forms/project-form-modal.tsx) - Project form with budget field handling
 14. [src/components/admin/timesheet-grid.tsx](src/components/admin/timesheet-grid.tsx) - Weekly timesheet grid view
 15. [src/lib/timesheet-utils.ts](src/lib/timesheet-utils.ts) - ISO week calculations
+16. [src/app/api/harvest/locked-periods/route.ts](src/app/api/harvest/locked-periods/route.ts) - Locked weeks API
+17. [src/lib/locked-period-utils.ts](src/lib/locked-period-utils.ts) - Week locking utilities
+18. [src/lib/error-utils.ts](src/lib/error-utils.ts) - Error message sanitization
 
 ## Common Patterns
 
