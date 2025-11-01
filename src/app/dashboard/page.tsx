@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { format, startOfWeek, startOfMonth, endOfWeek, endOfMonth } from 'date-fns';
+import { format, startOfWeek, endOfWeek, subDays } from 'date-fns';
 import { Clock, Receipt, TrendingUp, Activity } from 'lucide-react';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,37 +22,37 @@ export default function DashboardPage() {
   const weekStart = format(startOfWeek(today, { weekStartsOn: 1 }), 'yyyy-MM-dd');
   const weekEnd = format(endOfWeek(today, { weekStartsOn: 1 }), 'yyyy-MM-dd');
 
-  // Month calculations
-  const monthStart = format(startOfMonth(today), 'yyyy-MM-dd');
-  const monthEnd = format(endOfMonth(today), 'yyyy-MM-dd');
+  // Last 7 days calculations
+  const last7DaysStart = format(subDays(today, 6), 'yyyy-MM-dd'); // 7 days including today
+  const last7DaysEnd = format(today, 'yyyy-MM-dd');
 
   const { data: weekTimeEntries, isLoading: isLoadingWeekTime } = useTimeEntries({
     from: weekStart,
     to: weekEnd,
   });
 
-  const { data: monthTimeEntries, isLoading: isLoadingMonthTime } = useTimeEntries({
-    from: monthStart,
-    to: monthEnd,
+  const { data: last7DaysTimeEntries, isLoading: isLoadingLast7DaysTime } = useTimeEntries({
+    from: last7DaysStart,
+    to: last7DaysEnd,
   });
 
-  const { data: monthExpenses, isLoading: isLoadingMonthExpenses } = useExpenses({
-    from: monthStart,
-    to: monthEnd,
+  const { data: last7DaysExpenses, isLoading: isLoadingLast7DaysExpenses } = useExpenses({
+    from: last7DaysStart,
+    to: last7DaysEnd,
   });
 
   // Calculate stats
   const weekHours = weekTimeEntries?.time_entries.reduce((sum, entry) => sum + entry.hours, 0) || 0;
-  const monthHours =
-    monthTimeEntries?.time_entries.reduce((sum, entry) => sum + entry.hours, 0) || 0;
-  const monthExpenseTotal =
-    monthExpenses?.expenses.reduce((sum, expense) => sum + expense.total_cost, 0) || 0;
+  const last7DaysHours =
+    last7DaysTimeEntries?.time_entries.reduce((sum, entry) => sum + entry.hours, 0) || 0;
+  const last7DaysExpenseTotal =
+    last7DaysExpenses?.expenses.reduce((sum, expense) => sum + expense.total_cost, 0) || 0;
   const pendingExpenses =
-    monthExpenses?.expenses.filter(e => !e.is_billed && !e.is_locked).length || 0;
+    last7DaysExpenses?.expenses.filter(e => !e.is_billed && !e.is_locked).length || 0;
 
   // Recent entries (last 5)
-  const recentTimeEntries = monthTimeEntries?.time_entries.slice(0, 5) || [];
-  const recentExpenses = monthExpenses?.expenses.slice(0, 5) || [];
+  const recentTimeEntries = last7DaysTimeEntries?.time_entries.slice(0, 5) || [];
+  const recentExpenses = last7DaysExpenses?.expenses.slice(0, 5) || [];
 
   return (
     <div className="space-y-8">
@@ -85,31 +85,35 @@ export default function DashboardPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Hours This Month</CardTitle>
+            <CardTitle className="text-sm font-medium">Hours Last 7 Days</CardTitle>
             <TrendingUp className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            {isLoadingMonthTime ? (
+            {isLoadingLast7DaysTime ? (
               <Skeleton className="h-8 w-20" />
             ) : (
-              <div className="text-2xl font-bold">{monthHours.toFixed(1)}h</div>
+              <div className="text-2xl font-bold">{last7DaysHours.toFixed(1)}h</div>
             )}
-            <p className="text-xs text-muted-foreground">{format(today, 'MMMM yyyy')}</p>
+            <p className="text-xs text-muted-foreground">
+              {format(subDays(today, 6), 'MMM d')} - {format(today, 'MMM d')}
+            </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Expenses This Month</CardTitle>
+            <CardTitle className="text-sm font-medium">Expenses Last 7 Days</CardTitle>
             <Receipt className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            {isLoadingMonthExpenses ? (
+            {isLoadingLast7DaysExpenses ? (
               <Skeleton className="h-8 w-20" />
             ) : (
-              <div className="text-2xl font-bold">${monthExpenseTotal.toFixed(2)}</div>
+              <div className="text-2xl font-bold">${last7DaysExpenseTotal.toFixed(2)}</div>
             )}
-            <p className="text-xs text-muted-foreground">{format(today, 'MMMM yyyy')}</p>
+            <p className="text-xs text-muted-foreground">
+              {format(subDays(today, 6), 'MMM d')} - {format(today, 'MMM d')}
+            </p>
           </CardContent>
         </Card>
 
@@ -119,7 +123,7 @@ export default function DashboardPage() {
             <Activity className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            {isLoadingMonthExpenses ? (
+            {isLoadingLast7DaysExpenses ? (
               <Skeleton className="h-8 w-20" />
             ) : (
               <div className="text-2xl font-bold">{pendingExpenses}</div>
@@ -165,7 +169,7 @@ export default function DashboardPage() {
             </TabsList>
 
             <TabsContent value="time" className="space-y-4">
-              {isLoadingMonthTime ? (
+              {isLoadingLast7DaysTime ? (
                 <div className="space-y-2">
                   {[1, 2, 3].map(i => (
                     <Skeleton key={i} className="h-16 w-full" />
@@ -207,7 +211,7 @@ export default function DashboardPage() {
             </TabsContent>
 
             <TabsContent value="expenses" className="space-y-4">
-              {isLoadingMonthExpenses ? (
+              {isLoadingLast7DaysExpenses ? (
                 <div className="space-y-2">
                   {[1, 2, 3].map(i => (
                     <Skeleton key={i} className="h-16 w-full" />

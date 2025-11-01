@@ -32,9 +32,12 @@ import {
   useProjects,
   useUserProjectAssignments,
   useExpenseCategories,
+  useLockedPeriods,
 } from '@/hooks/use-harvest';
 import { useIsAdminOrManager } from '@/lib/admin-utils';
 import { useNumericInput } from '@/hooks/use-numeric-input';
+import { formatLockedPeriodError } from '@/lib/error-utils';
+import { isDateInLockedWeek } from '@/lib/locked-period-utils';
 import { toast } from 'sonner';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -86,6 +89,9 @@ export function ExpenseForm({
 }: ExpenseFormProps) {
   const isAdminOrManager = useIsAdminOrManager();
   const numericHandlers = useNumericInput(2);
+
+  // Fetch locked week ranges (Harvest locks entire weeks, not individual dates)
+  const { data: lockedWeeks = [] } = useLockedPeriods();
 
   const { data: allProjectsData, isLoading: isLoadingAllProjects } = useProjects({
     enabled: isAdminOrManager === true,
@@ -139,7 +145,9 @@ export function ExpenseForm({
       setSelectedFile(null);
       onSuccess?.();
     } catch (error: any) {
-      toast.error(error?.response?.data?.error || 'Failed to create expense');
+      const errorMessage = error?.response?.data?.error || 'Failed to create expense';
+      const cleanMessage = formatLockedPeriodError(errorMessage);
+      toast.error(cleanMessage);
     }
   };
 
@@ -153,7 +161,7 @@ export function ExpenseForm({
             render={({ field }) => {
               const [isOpen, setIsOpen] = useState(false);
               return (
-                <FormItem className="flex flex-col">
+                <FormItem className="flex flex-col relative">
                   <FormLabel>Date</FormLabel>
                   <Popover open={isOpen} onOpenChange={setIsOpen}>
                     <PopoverTrigger asChild>
@@ -178,12 +186,21 @@ export function ExpenseForm({
                           field.onChange(date);
                           setIsOpen(false);
                         }}
-                        disabled={date => date > new Date() || date < new Date('1900-01-01')}
+                        disabled={date =>
+                          date > new Date() ||
+                          date < new Date('1900-01-01') ||
+                          isDateInLockedWeek(date, lockedWeeks)
+                        }
                         initialFocus
                       />
                     </PopoverContent>
                   </Popover>
                   <FormMessage />
+                  {lockedWeeks.length > 0 && (
+                    <p className="absolute top-full mt-1 text-xxs text-muted-foreground">
+                      Locked weeks cannot be selected
+                    </p>
+                  )}
                 </FormItem>
               );
             }}

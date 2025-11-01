@@ -134,7 +134,7 @@ export function ClientFormModal({ open, onOpenChange, clientId }: ClientFormModa
                   <FormItem>
                     <FormLabel>Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="Client name" {...field} />
+                      <Input placeholder="Client name" autoFocus {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -147,7 +147,7 @@ export function ClientFormModal({ open, onOpenChange, clientId }: ClientFormModa
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Currency</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select key={field.value} onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select currency" />

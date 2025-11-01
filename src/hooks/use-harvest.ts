@@ -70,6 +70,7 @@ export const harvestKeys = {
   expenseCategories: () => [...harvestKeys.all, 'expense-categories'] as const,
   currentUser: () => [...harvestKeys.all, 'current-user'] as const,
   managedProjects: () => [...harvestKeys.all, 'managed-projects'] as const,
+  lockedPeriods: () => [...harvestKeys.all, 'locked-periods'] as const,
   users: (params?: Record<string, unknown>) =>
     [...harvestKeys.all, 'users', normalizeParams(params)] as const,
   clients: (params?: Record<string, unknown>) =>
@@ -1004,5 +1005,33 @@ export function useDeleteUserAssignment(projectId: number) {
       queryClient.invalidateQueries({ queryKey: harvestKeys.userAssignments(projectId) });
       queryClient.invalidateQueries({ queryKey: harvestKeys.userProjectAssignments() });
     },
+  });
+}
+
+// ============================================================================
+// Locked Periods
+// ============================================================================
+
+/**
+ * Locked Periods Hook
+ *
+ * Fetches locked week ranges (approved/locked timesheets and expenses).
+ * Harvest locks entire weeks (Monday-Sunday), not individual dates.
+ * Used to prevent users from selecting any date within locked weeks.
+ */
+export function useLockedPeriods() {
+  const { data: session } = useSession();
+
+  return useQuery({
+    queryKey: harvestKeys.lockedPeriods(),
+    queryFn: async () => {
+      const { data } = await axios.get<{
+        locked_weeks: Array<{ weekStart: string; weekEnd: string }>;
+      }>('/api/harvest/locked-periods');
+      return data.locked_weeks;
+    },
+    enabled: !!session,
+    staleTime: 5 * 60 * 1000, // 5 minutes - locked periods don't change often
+    refetchOnWindowFocus: true,
   });
 }
