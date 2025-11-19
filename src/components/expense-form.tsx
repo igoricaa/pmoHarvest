@@ -38,7 +38,7 @@ import {
 	useExpenseCategories,
 	useLockedPeriods,
 } from "@/hooks/use-harvest";
-import { useIsAdmin, useIsAdminOrManager } from "@/lib/admin-utils";
+import { useIsAdmin } from "@/lib/admin-utils";
 import { useNumericInput } from "@/hooks/use-numeric-input";
 import { formatLockedPeriodError } from "@/lib/error-utils";
 import { isDateInLockedWeek } from "@/lib/locked-period-utils";
@@ -98,7 +98,6 @@ export function ExpenseForm({
 	submitButtonText = "Submit Expense",
 }: ExpenseFormProps) {
 	const isAdmin = useIsAdmin();
-	const isAdminOrManager = useIsAdminOrManager();
 	const numericHandlers = useNumericInput(2);
 
 	// Fetch locked week ranges (Harvest locks entire weeks, not individual dates)

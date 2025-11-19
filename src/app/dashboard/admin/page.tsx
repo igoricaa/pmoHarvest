@@ -19,7 +19,11 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { useSession } from "@/lib/auth-client";
-import { useIsAdmin, useIsAdminOrManager } from "@/lib/admin-utils";
+import {
+	useIsAdmin,
+	useIsAdminOrManager,
+	useIsManager,
+} from "@/lib/admin-utils";
 import {
 	useTimeEntries,
 	useExpenses,
@@ -42,7 +46,12 @@ export default function AdminDashboardPage() {
 	const router = useRouter();
 	const { data: session } = useSession();
 	const isAdminOrManager = useIsAdminOrManager();
+	const isManager = useIsManager();
 	const isAdmin = useIsAdmin();
+
+	console.log("isAdminOrManager", isAdminOrManager);
+	console.log("isManager", isManager);
+	console.log("isAdmin", isAdmin);
 
 	// Get managed project IDs for managers (MUST be before early returns)
 	const { data: managedProjectIds } = useManagedProjects();

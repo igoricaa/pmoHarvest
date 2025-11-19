@@ -702,14 +702,14 @@ export function useUserProjectAssignments(options?: { enabled?: boolean }) {
  */
 export function useTaskAssignments(
 	projectId: number | null,
-	options?: { isAdminOrManager?: boolean },
+	options?: { isAdmin?: boolean },
 ) {
-	const isAdminOrManager = options?.isAdminOrManager ?? true; // Default to admin endpoint for backwards compatibility
+	const isAdmin = options?.isAdmin ?? false;
 
 	return useQuery({
 		queryKey: harvestKeys.tasks(projectId!),
 		queryFn: async () => {
-			if (isAdminOrManager) {
+			if (isAdmin) {
 				// Admin/Manager: Use project task assignments endpoint
 				const { data } = await axios.get<HarvestTaskAssignmentResponse>(
 					`/api/harvest/projects/${projectId}/tasks`,

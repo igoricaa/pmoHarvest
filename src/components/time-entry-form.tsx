@@ -38,7 +38,7 @@ import {
 	useTaskAssignments,
 	useLockedPeriods,
 } from "@/hooks/use-harvest";
-import { useIsAdminOrManager } from "@/lib/admin-utils";
+import { useIsAdmin } from "@/lib/admin-utils";
 import { useNumericInput } from "@/hooks/use-numeric-input";
 import { formatLockedPeriodError } from "@/lib/error-utils";
 import { isDateInLockedWeek } from "@/lib/locked-period-utils";
@@ -82,7 +82,7 @@ export function TimeEntryForm({
 	const [selectedProjectId, setSelectedProjectId] = useState<number | null>(
 		null,
 	);
-	const isAdminOrManager = useIsAdminOrManager();
+	const isAdmin = useIsAdmin();
 	const numericHandlers = useNumericInput(2);
 
 	// Fetch locked week ranges (Harvest locks entire weeks, not individual dates)
@@ -90,23 +90,23 @@ export function TimeEntryForm({
 
 	const { data: allProjectsData, isLoading: isLoadingAllProjects } =
 		useProjects({
-			enabled: isAdminOrManager === true,
+			enabled: isAdmin === true,
 		});
 	const { data: userProjectsData, isLoading: isLoadingUserProjects } =
 		useUserProjectAssignments({
-			enabled: isAdminOrManager === false,
+			enabled: isAdmin !== true,
 		});
 
-	// Use all projects for admins/managers, user projects for members
-	const projectsData = isAdminOrManager ? allProjectsData : userProjectsData;
-	const isLoadingProjects = isAdminOrManager
+	// Use all projects for admins only, user projects for managers and members
+	const projectsData = isAdmin ? allProjectsData : userProjectsData;
+	const isLoadingProjects = isAdmin
 		? isLoadingAllProjects
 		: isLoadingUserProjects;
 
 	const { data: tasksData, isLoading: isLoadingTasks } = useTaskAssignments(
 		selectedProjectId,
 		{
-			isAdminOrManager,
+			isAdmin,
 		},
 	);
 

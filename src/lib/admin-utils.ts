@@ -3,29 +3,29 @@
  * Helper functions for admin/manager role checks and data filtering
  */
 
-import type { Session } from '@/lib/auth-client';
-import { useSession } from '@/lib/auth-client';
-import { createHarvestClient } from './harvest';
+import type { Session } from "@/lib/auth-client";
+import { useSession } from "@/lib/auth-client";
+import { createHarvestClient } from "./harvest";
 
 /**
  * Check if user is an administrator
  */
 export function isAdmin(session: Session | null): boolean {
-  return session?.user?.accessRoles?.includes('administrator') ?? false;
+	return session?.user?.accessRoles?.includes("administrator") ?? false;
 }
 
 /**
  * Check if user is a manager
  */
 export function isManager(session: Session | null): boolean {
-  return session?.user?.accessRoles?.includes('manager') ?? false;
+	return session?.user?.accessRoles?.includes("manager") ?? false;
 }
 
 /**
  * Check if user is an administrator or manager
  */
 export function isAdminOrManager(session: Session | null): boolean {
-  return isAdmin(session) || isManager(session);
+	return isAdmin(session) || isManager(session);
 }
 
 /**
@@ -35,13 +35,15 @@ export function isAdminOrManager(session: Session | null): boolean {
  * @param accessToken - User's Harvest OAuth access token
  * @returns Array of project IDs that the user manages
  */
-export async function getManagedProjectIds(accessToken: string): Promise<number[]> {
-  const client = createHarvestClient(accessToken);
-  const assignments = await client.getCurrentUserProjectAssignments();
+export async function getManagedProjectIds(
+	accessToken: string,
+): Promise<number[]> {
+	const client = createHarvestClient(accessToken);
+	const assignments = await client.getCurrentUserProjectAssignments();
 
-  return assignments.project_assignments
-    .filter(pa => pa.is_project_manager === true)
-    .map(pa => pa.project.id);
+	return assignments.project_assignments
+		.filter((pa) => pa.is_project_manager === true)
+		.map((pa) => pa.project.id);
 }
 
 /**
@@ -53,10 +55,10 @@ export async function getManagedProjectIds(accessToken: string): Promise<number[
  * @returns Filtered array containing only items with matching project IDs
  */
 export function filterByProjectIds<T extends { project: { id: number } }>(
-  items: T[],
-  projectIds: number[]
+	items: T[],
+	projectIds: number[],
 ): T[] {
-  return items.filter(item => projectIds.includes(item.project.id));
+	return items.filter((item) => projectIds.includes(item.project.id));
 }
 
 /**
@@ -66,9 +68,12 @@ export function filterByProjectIds<T extends { project: { id: number } }>(
  * @param projectId - Project ID to check
  * @returns True if user is project manager for this project
  */
-export async function canManageProject(accessToken: string, projectId: number): Promise<boolean> {
-  const managedProjectIds = await getManagedProjectIds(accessToken);
-  return managedProjectIds.includes(projectId);
+export async function canManageProject(
+	accessToken: string,
+	projectId: number,
+): Promise<boolean> {
+	const managedProjectIds = await getManagedProjectIds(accessToken);
+	return managedProjectIds.includes(projectId);
 }
 
 /**
@@ -77,13 +82,13 @@ export async function canManageProject(accessToken: string, projectId: number): 
  * @returns boolean indicating if user has administrator role, or undefined if session is loading
  */
 export function useIsAdmin(): boolean | undefined {
-  const { data: session } = useSession();
+	const { data: session } = useSession();
 
-  if (!session?.user) {
-    return undefined; // Loading state
-  }
+	if (!session?.user) {
+		return undefined; // Loading state
+	}
 
-  return session.user.accessRoles?.includes('administrator') ?? false;
+	return session.user.accessRoles?.includes("administrator") ?? false;
 }
 
 /**
@@ -92,14 +97,14 @@ export function useIsAdmin(): boolean | undefined {
  * @returns boolean indicating if user has manager role only, or undefined if session is loading
  */
 export function useIsManager(): boolean | undefined {
-  const { data: session } = useSession();
-  const isAdmin = useIsAdmin();
+	const { data: session } = useSession();
+	const isAdmin = useIsAdmin();
 
-  if (!session?.user || isAdmin === undefined) {
-    return undefined; // Loading state
-  }
+	if (!session?.user || isAdmin === undefined) {
+		return undefined; // Loading state
+	}
 
-  return !isAdmin && (session.user.accessRoles?.includes('manager') ?? false);
+	return !isAdmin && (session.user.accessRoles?.includes("manager") ?? false);
 }
 
 /**
@@ -109,13 +114,15 @@ export function useIsManager(): boolean | undefined {
  * @returns boolean indicating if user has admin or manager role, or undefined if session is loading
  */
 export function useIsAdminOrManager(): boolean | undefined {
-  const { data: session } = useSession();
+	const { data: session } = useSession();
 
-  if (!session?.user) {
-    return undefined; // Loading state
-  }
+	if (!session?.user) {
+		return undefined; // Loading state
+	}
 
-  return (
-    session.user.accessRoles?.some(role => role === 'administrator' || role === 'manager') ?? false
-  );
+	return (
+		session.user.accessRoles?.some(
+			(role) => role === "administrator" || role === "manager",
+		) ?? false
+	);
 }

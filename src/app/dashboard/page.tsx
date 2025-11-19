@@ -11,18 +11,39 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
-import { useTimeEntries, useExpenses } from "@/hooks/use-harvest";
+import {
+	useTimeEntries,
+	useExpenses,
+	useProjects,
+	useUserProjectAssignments,
+} from "@/hooks/use-harvest";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TimeEntryModal } from "@/components/time-entry-modal";
 import { ExpenseModal } from "@/components/expense-modal";
+import { useIsAdmin } from "@/lib/admin-utils";
 
 export default function DashboardPage() {
 	const [timeModalOpen, setTimeModalOpen] = useState(false);
 	const [expenseModalOpen, setExpenseModalOpen] = useState(false);
 	const today = new Date();
+	const isAdmin = useIsAdmin();
+
+	const { data: allProjectsData, isLoading: isLoadingAllProjects } =
+		useProjects({
+			enabled: isAdmin === true,
+		});
+	const { data: userProjectsData, isLoading: isLoadingUserProjects } =
+		useUserProjectAssignments({
+			enabled: isAdmin !== true,
+		});
+
+	const projectsData = isAdmin ? allProjectsData : userProjectsData;
+	const isLoadingProjects = isAdmin
+		? isLoadingAllProjects
+		: isLoadingUserProjects;
 
 	// Week calculations
 	const weekStart = format(
@@ -52,6 +73,17 @@ export default function DashboardPage() {
 			from: last7DaysStart,
 			to: last7DaysEnd,
 		});
+
+	// Show empty state if no projects assigned
+	if (!isLoadingProjects && projectsData?.projects?.length === 0) {
+		return (
+			<div className="flex items-center justify-center min-h-[400px]">
+				<p className="text-muted-foreground text-lg">
+					You have no projects assigned
+				</p>
+			</div>
+		);
+	}
 
 	// Calculate stats
 	const weekHours =

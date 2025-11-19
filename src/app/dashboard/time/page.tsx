@@ -12,7 +12,12 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { useTimeEntries, useDeleteTimeEntry } from "@/hooks/use-harvest";
+import {
+	useTimeEntries,
+	useDeleteTimeEntry,
+	useProjects,
+	useUserProjectAssignments,
+} from "@/hooks/use-harvest";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -24,9 +29,25 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { TimeEntryForm } from "@/components/time-entry-form";
+import { useIsAdmin } from "@/lib/admin-utils";
 
 export default function TimeEntriesPage() {
 	const [showForm, setShowForm] = useState(true);
+	const isAdmin = useIsAdmin();
+
+	const { data: allProjectsData, isLoading: isLoadingAllProjects } =
+		useProjects({
+			enabled: isAdmin === true,
+		});
+	const { data: userProjectsData, isLoading: isLoadingUserProjects } =
+		useUserProjectAssignments({
+			enabled: isAdmin !== true,
+		});
+
+	const projectsData = isAdmin ? allProjectsData : userProjectsData;
+	const isLoadingProjects = isAdmin
+		? isLoadingAllProjects
+		: isLoadingUserProjects;
 
 	// Get data from last 30 days
 	const from = format(
@@ -42,6 +63,17 @@ export default function TimeEntriesPage() {
 		isFetching: isFetchingTimeEntries,
 	} = useTimeEntries({ from, to });
 	const deleteMutation = useDeleteTimeEntry();
+
+	// Show empty state if no projects assigned
+	if (!isLoadingProjects && projectsData?.projects?.length === 0) {
+		return (
+			<div className="flex items-center justify-center min-h-[400px]">
+				<p className="text-muted-foreground text-lg">
+					You have no projects assigned
+				</p>
+			</div>
+		);
+	}
 
 	const handleDelete = async (id: number) => {
 		if (!confirm("Are you sure you want to delete this time entry?")) return;
