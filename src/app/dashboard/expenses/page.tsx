@@ -29,7 +29,7 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { ExpenseForm } from "@/components/expense-form";
-import { useIsAdmin } from "@/lib/admin-utils";
+import { useIsAdmin } from "@/lib/admin-utils-client";
 
 export default function ExpensesPage() {
 	const [showForm, setShowForm] = useState(true);

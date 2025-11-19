@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { useSession } from "@/lib/auth-client";
-import { useIsAdmin, useIsAdminOrManager } from "@/lib/admin-utils";
+import { useIsAdmin, useIsAdminOrManager } from "@/lib/admin-utils-client";
 import {
 	useExpenses,
 	useDeleteExpense,

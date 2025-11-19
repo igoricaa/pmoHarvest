@@ -44,7 +44,7 @@ import {
 } from "@/hooks/use-harvest";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { useIsAdmin } from "@/lib/admin-utils";
+import { useIsAdmin } from "@/lib/admin-utils-client";
 
 const projectFormSchema = z
 	.object({

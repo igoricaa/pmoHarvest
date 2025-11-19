@@ -23,7 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TimeEntryModal } from "@/components/time-entry-modal";
 import { ExpenseModal } from "@/components/expense-modal";
-import { useIsAdmin } from "@/lib/admin-utils";
+import { useIsAdmin } from "@/lib/admin-utils-client";
 
 export default function DashboardPage() {
 	const [timeModalOpen, setTimeModalOpen] = useState(false);

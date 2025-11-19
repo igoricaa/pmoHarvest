@@ -38,7 +38,7 @@ import {
 	useTaskAssignments,
 	useLockedPeriods,
 } from "@/hooks/use-harvest";
-import { useIsAdmin } from "@/lib/admin-utils";
+import { useIsAdmin } from "@/lib/admin-utils-client";
 import { useNumericInput } from "@/hooks/use-numeric-input";
 import { formatLockedPeriodError } from "@/lib/error-utils";
 import { isDateInLockedWeek } from "@/lib/locked-period-utils";

@@ -29,7 +29,7 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { TimeEntryForm } from "@/components/time-entry-form";
-import { useIsAdmin } from "@/lib/admin-utils";
+import { useIsAdmin } from "@/lib/admin-utils-client";
 
 export default function TimeEntriesPage() {
 	const [showForm, setShowForm] = useState(true);

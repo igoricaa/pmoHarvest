@@ -12,7 +12,7 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { useSession } from "@/lib/auth-client";
-import { useIsAdminOrManager } from "@/lib/admin-utils";
+import { useIsAdminOrManager } from "@/lib/admin-utils-client";
 import {
 	useProjectUserAssignments,
 	useDeleteUserAssignment,

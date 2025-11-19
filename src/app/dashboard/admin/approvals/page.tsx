@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useSession } from "@/lib/auth-client";
-import { useIsAdminOrManager } from "@/lib/admin-utils";
+import { useIsAdminOrManager } from "@/lib/admin-utils-client";
 import {
 	Card,
 	CardContent,

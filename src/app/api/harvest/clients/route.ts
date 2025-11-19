@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { createHarvestClient } from "@/lib/harvest";
 import { getErrorMessage } from "@/lib/api-utils";
 import { logError } from "@/lib/logger";
-import { isAdmin } from "@/lib/admin-utils";
+import { isAdmin } from "@/lib/admin-utils-server";
 import { validateRequest } from "@/lib/validation/validate-request";
 import { clientCreateSchema } from "@/lib/validation/harvest-schemas";
 

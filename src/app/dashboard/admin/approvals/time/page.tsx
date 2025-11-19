@@ -4,7 +4,7 @@ import { useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useSession } from "@/lib/auth-client";
-import { useIsAdmin, useIsAdminOrManager } from "@/lib/admin-utils";
+import { useIsAdmin, useIsAdminOrManager } from "@/lib/admin-utils-client";
 import { useTimeEntries, useManagedProjects } from "@/hooks/use-harvest";
 import { groupTimeEntriesByUserAndWeek } from "@/lib/timesheet-utils";
 import { PendingTimesheetsList } from "@/components/admin/pending-timesheets-list";

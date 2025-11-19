@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
-import { useIsAdminOrManager } from "@/lib/admin-utils";
+import { useIsAdminOrManager } from "@/lib/admin-utils-client";
 import { useExpenses } from "@/hooks/use-harvest";
 import { ExpenseTimesheetTable } from "@/components/admin/expense-timesheet-table";
 import { Loader2 } from "lucide-react";

@@ -12,7 +12,7 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { useSession } from "@/lib/auth-client";
-import { useIsAdmin } from "@/lib/admin-utils";
+import { useIsAdmin } from "@/lib/admin-utils-client";
 import { useUsers } from "@/hooks/use-harvest";
 import { DataTable, type Column } from "@/components/admin/data-table";
 import { UserFormModal } from "@/components/admin/forms/user-form-modal";

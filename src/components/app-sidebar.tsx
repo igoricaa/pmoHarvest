@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/sidebar";
 import { UserButton } from "@/components/user-button";
 import { ThemeSwitcher } from "@/components/theme-switcher";
-import { useIsAdmin, useIsAdminOrManager } from "@/lib/admin-utils";
+import { useIsAdmin, useIsAdminOrManager } from "@/lib/admin-utils-client";
 import Logo from "./Logo";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";

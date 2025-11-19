@@ -19,11 +19,7 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { useSession } from "@/lib/auth-client";
-import {
-	useIsAdmin,
-	useIsAdminOrManager,
-	useIsManager,
-} from "@/lib/admin-utils";
+import { useIsAdmin, useIsAdminOrManager } from "@/lib/admin-utils-client";
 import {
 	useTimeEntries,
 	useExpenses,
