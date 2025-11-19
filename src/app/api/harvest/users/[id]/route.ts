@@ -6,7 +6,6 @@ import { logError } from "@/lib/logger";
 import { isAdmin } from "@/lib/admin-utils";
 import { validateRequest } from "@/lib/validation/validate-request";
 import { userUpdateSchema } from "@/lib/validation/harvest-schemas";
-import type { UpdateUserInput } from "@/types/harvest";
 
 export async function PATCH(
 	request: NextRequest,
