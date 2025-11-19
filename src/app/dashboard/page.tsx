@@ -1,272 +1,323 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { format, startOfWeek, endOfWeek, subDays } from 'date-fns';
-import { Clock, Receipt, TrendingUp, Activity } from 'lucide-react';
-import Link from 'next/link';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useTimeEntries, useExpenses } from '@/hooks/use-harvest';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { TimeEntryModal } from '@/components/time-entry-modal';
-import { ExpenseModal } from '@/components/expense-modal';
+import { useState } from "react";
+import { format, startOfWeek, endOfWeek, subDays } from "date-fns";
+import { Clock, Receipt, TrendingUp, Activity } from "lucide-react";
+import Link from "next/link";
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from "@/components/ui/card";
+import { useTimeEntries, useExpenses } from "@/hooks/use-harvest";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TimeEntryModal } from "@/components/time-entry-modal";
+import { ExpenseModal } from "@/components/expense-modal";
 
 export default function DashboardPage() {
-  const [timeModalOpen, setTimeModalOpen] = useState(false);
-  const [expenseModalOpen, setExpenseModalOpen] = useState(false);
-  const today = new Date();
+	const [timeModalOpen, setTimeModalOpen] = useState(false);
+	const [expenseModalOpen, setExpenseModalOpen] = useState(false);
+	const today = new Date();
 
-  // Week calculations
-  const weekStart = format(startOfWeek(today, { weekStartsOn: 1 }), 'yyyy-MM-dd');
-  const weekEnd = format(endOfWeek(today, { weekStartsOn: 1 }), 'yyyy-MM-dd');
+	// Week calculations
+	const weekStart = format(
+		startOfWeek(today, { weekStartsOn: 1 }),
+		"yyyy-MM-dd",
+	);
+	const weekEnd = format(endOfWeek(today, { weekStartsOn: 1 }), "yyyy-MM-dd");
 
-  // Last 7 days calculations
-  const last7DaysStart = format(subDays(today, 6), 'yyyy-MM-dd'); // 7 days including today
-  const last7DaysEnd = format(today, 'yyyy-MM-dd');
+	// Last 7 days calculations
+	const last7DaysStart = format(subDays(today, 6), "yyyy-MM-dd"); // 7 days including today
+	const last7DaysEnd = format(today, "yyyy-MM-dd");
 
-  const { data: weekTimeEntries, isLoading: isLoadingWeekTime } = useTimeEntries({
-    from: weekStart,
-    to: weekEnd,
-  });
+	const { data: weekTimeEntries, isLoading: isLoadingWeekTime } =
+		useTimeEntries({
+			from: weekStart,
+			to: weekEnd,
+		});
 
-  const { data: last7DaysTimeEntries, isLoading: isLoadingLast7DaysTime } = useTimeEntries({
-    from: last7DaysStart,
-    to: last7DaysEnd,
-  });
+	const { data: last7DaysTimeEntries, isLoading: isLoadingLast7DaysTime } =
+		useTimeEntries({
+			from: last7DaysStart,
+			to: last7DaysEnd,
+		});
 
-  const { data: last7DaysExpenses, isLoading: isLoadingLast7DaysExpenses } = useExpenses({
-    from: last7DaysStart,
-    to: last7DaysEnd,
-  });
+	const { data: last7DaysExpenses, isLoading: isLoadingLast7DaysExpenses } =
+		useExpenses({
+			from: last7DaysStart,
+			to: last7DaysEnd,
+		});
 
-  // Calculate stats
-  const weekHours = weekTimeEntries?.time_entries.reduce((sum, entry) => sum + entry.hours, 0) || 0;
-  const last7DaysHours =
-    last7DaysTimeEntries?.time_entries.reduce((sum, entry) => sum + entry.hours, 0) || 0;
-  const last7DaysExpenseTotal =
-    last7DaysExpenses?.expenses.reduce((sum, expense) => sum + expense.total_cost, 0) || 0;
-  const pendingExpenses =
-    last7DaysExpenses?.expenses.filter(e => !e.is_billed && !e.is_locked).length || 0;
+	// Calculate stats
+	const weekHours =
+		weekTimeEntries?.time_entries.reduce(
+			(sum, entry) => sum + entry.hours,
+			0,
+		) || 0;
+	const last7DaysHours =
+		last7DaysTimeEntries?.time_entries.reduce(
+			(sum, entry) => sum + entry.hours,
+			0,
+		) || 0;
+	const last7DaysExpenseTotal =
+		last7DaysExpenses?.expenses.reduce(
+			(sum, expense) => sum + expense.total_cost,
+			0,
+		) || 0;
+	const pendingExpenses =
+		last7DaysExpenses?.expenses.filter((e) => !e.is_billed && !e.is_locked)
+			.length || 0;
 
-  // Recent entries (last 5)
-  const recentTimeEntries = last7DaysTimeEntries?.time_entries.slice(0, 5) || [];
-  const recentExpenses = last7DaysExpenses?.expenses.slice(0, 5) || [];
+	// Recent entries (last 5)
+	const recentTimeEntries =
+		last7DaysTimeEntries?.time_entries.slice(0, 5) || [];
+	const recentExpenses = last7DaysExpenses?.expenses.slice(0, 5) || [];
 
-  return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground">
-          Welcome back! Here's an overview of your time and expenses.
-        </p>
-      </div>
+	return (
+		<div className="space-y-8">
+			<div>
+				<h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+				<p className="text-muted-foreground">
+					Welcome back! Here's an overview of your time and expenses.
+				</p>
+			</div>
 
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Hours This Week</CardTitle>
-            <Clock className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            {isLoadingWeekTime ? (
-              <Skeleton className="h-8 w-20" />
-            ) : (
-              <div className="text-2xl font-bold">{weekHours.toFixed(1)}h</div>
-            )}
-            <p className="text-xs text-muted-foreground">
-              {format(startOfWeek(today, { weekStartsOn: 1 }), 'MMM d')} -{' '}
-              {format(endOfWeek(today, { weekStartsOn: 1 }), 'MMM d')}
-            </p>
-          </CardContent>
-        </Card>
+			{/* Stats Cards */}
+			<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+				<Card>
+					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+						<CardTitle className="text-sm font-medium">
+							Hours This Week
+						</CardTitle>
+						<Clock className="h-4 w-4 text-primary" />
+					</CardHeader>
+					<CardContent>
+						{isLoadingWeekTime ? (
+							<Skeleton className="h-8 w-20" />
+						) : (
+							<div className="text-2xl font-bold">{weekHours.toFixed(1)}h</div>
+						)}
+						<p className="text-xs text-muted-foreground">
+							{format(startOfWeek(today, { weekStartsOn: 1 }), "MMM d")} -{" "}
+							{format(endOfWeek(today, { weekStartsOn: 1 }), "MMM d")}
+						</p>
+					</CardContent>
+				</Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Hours Last 7 Days</CardTitle>
-            <TrendingUp className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            {isLoadingLast7DaysTime ? (
-              <Skeleton className="h-8 w-20" />
-            ) : (
-              <div className="text-2xl font-bold">{last7DaysHours.toFixed(1)}h</div>
-            )}
-            <p className="text-xs text-muted-foreground">
-              {format(subDays(today, 6), 'MMM d')} - {format(today, 'MMM d')}
-            </p>
-          </CardContent>
-        </Card>
+				<Card>
+					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+						<CardTitle className="text-sm font-medium">
+							Hours Last 7 Days
+						</CardTitle>
+						<TrendingUp className="h-4 w-4 text-primary" />
+					</CardHeader>
+					<CardContent>
+						{isLoadingLast7DaysTime ? (
+							<Skeleton className="h-8 w-20" />
+						) : (
+							<div className="text-2xl font-bold">
+								{last7DaysHours.toFixed(1)}h
+							</div>
+						)}
+						<p className="text-xs text-muted-foreground">
+							{format(subDays(today, 6), "MMM d")} - {format(today, "MMM d")}
+						</p>
+					</CardContent>
+				</Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Expenses Last 7 Days</CardTitle>
-            <Receipt className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            {isLoadingLast7DaysExpenses ? (
-              <Skeleton className="h-8 w-20" />
-            ) : (
-              <div className="text-2xl font-bold">${last7DaysExpenseTotal.toFixed(2)}</div>
-            )}
-            <p className="text-xs text-muted-foreground">
-              {format(subDays(today, 6), 'MMM d')} - {format(today, 'MMM d')}
-            </p>
-          </CardContent>
-        </Card>
+				<Card>
+					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+						<CardTitle className="text-sm font-medium">
+							Expenses Last 7 Days
+						</CardTitle>
+						<Receipt className="h-4 w-4 text-primary" />
+					</CardHeader>
+					<CardContent>
+						{isLoadingLast7DaysExpenses ? (
+							<Skeleton className="h-8 w-20" />
+						) : (
+							<div className="text-2xl font-bold">
+								${last7DaysExpenseTotal.toFixed(2)}
+							</div>
+						)}
+						<p className="text-xs text-muted-foreground">
+							{format(subDays(today, 6), "MMM d")} - {format(today, "MMM d")}
+						</p>
+					</CardContent>
+				</Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending Expenses</CardTitle>
-            <Activity className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            {isLoadingLast7DaysExpenses ? (
-              <Skeleton className="h-8 w-20" />
-            ) : (
-              <div className="text-2xl font-bold">{pendingExpenses}</div>
-            )}
-            <p className="text-xs text-muted-foreground">Awaiting approval</p>
-          </CardContent>
-        </Card>
-      </div>
+				<Card>
+					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+						<CardTitle className="text-sm font-medium">
+							Pending Expenses
+						</CardTitle>
+						<Activity className="h-4 w-4 text-primary" />
+					</CardHeader>
+					<CardContent>
+						{isLoadingLast7DaysExpenses ? (
+							<Skeleton className="h-8 w-20" />
+						) : (
+							<div className="text-2xl font-bold">{pendingExpenses}</div>
+						)}
+						<p className="text-xs text-muted-foreground">Awaiting approval</p>
+					</CardContent>
+				</Card>
+			</div>
 
-      {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-          <CardDescription>Common tasks to get you started</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-wrap gap-4">
-          <Button onClick={() => setTimeModalOpen(true)}>
-            <Clock className="mr-2 h-4 w-4" />
-            Log Time
-          </Button>
-          <Button variant="outline" onClick={() => setExpenseModalOpen(true)}>
-            <Receipt className="mr-2 h-4 w-4" />
-            Add Expense
-          </Button>
-        </CardContent>
-      </Card>
+			{/* Quick Actions */}
+			<Card>
+				<CardHeader>
+					<CardTitle>Quick Actions</CardTitle>
+					<CardDescription>Common tasks to get you started</CardDescription>
+				</CardHeader>
+				<CardContent className="flex flex-wrap gap-4">
+					<Button onClick={() => setTimeModalOpen(true)}>
+						<Clock className="mr-2 h-4 w-4" />
+						Log Time
+					</Button>
+					<Button variant="outline" onClick={() => setExpenseModalOpen(true)}>
+						<Receipt className="mr-2 h-4 w-4" />
+						Add Expense
+					</Button>
+				</CardContent>
+			</Card>
 
-      {/* Modals */}
-      <TimeEntryModal open={timeModalOpen} onOpenChange={setTimeModalOpen} />
-      <ExpenseModal open={expenseModalOpen} onOpenChange={setExpenseModalOpen} />
+			{/* Modals */}
+			<TimeEntryModal open={timeModalOpen} onOpenChange={setTimeModalOpen} />
+			<ExpenseModal
+				open={expenseModalOpen}
+				onOpenChange={setExpenseModalOpen}
+			/>
 
-      {/* Recent Activity */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Activity</CardTitle>
-          <CardDescription>Your latest time entries and expenses</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="time" className="w-full" suppressHydrationWarning>
-            <TabsList className="grid w-full max-w-md grid-cols-2">
-              <TabsTrigger value="time">Time Entries</TabsTrigger>
-              <TabsTrigger value="expenses">Expenses</TabsTrigger>
-            </TabsList>
+			{/* Recent Activity */}
+			<Card>
+				<CardHeader>
+					<CardTitle>Recent Activity</CardTitle>
+					<CardDescription>
+						Your latest time entries and expenses
+					</CardDescription>
+				</CardHeader>
+				<CardContent>
+					<Tabs defaultValue="time" className="w-full" suppressHydrationWarning>
+						<TabsList className="grid w-full max-w-md grid-cols-2">
+							<TabsTrigger value="time">Time Entries</TabsTrigger>
+							<TabsTrigger value="expenses">Expenses</TabsTrigger>
+						</TabsList>
 
-            <TabsContent value="time" className="space-y-4">
-              {isLoadingLast7DaysTime ? (
-                <div className="space-y-2">
-                  {[1, 2, 3].map(i => (
-                    <Skeleton key={i} className="h-16 w-full" />
-                  ))}
-                </div>
-              ) : recentTimeEntries.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  No time entries yet. Start logging your time!
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {recentTimeEntries.map(entry => (
-                    <div
-                      key={entry.id}
-                      className="flex items-center justify-between rounded-lg border p-4"
-                    >
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium">{entry.project.name}</p>
-                          <Badge variant="secondary">{entry.task.name}</Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground">{entry.notes || 'No notes'}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {format(new Date(entry.spent_date), 'PPP')}
-                        </p>
-                      </div>
-                      <Badge variant="outline" className="ml-4">
-                        {entry.hours}h
-                      </Badge>
-                    </div>
-                  ))}
-                  {recentTimeEntries.length >= 5 && (
-                    <Button asChild variant="outline" className="w-full">
-                      <Link href="/dashboard/time">View All Time Entries</Link>
-                    </Button>
-                  )}
-                </div>
-              )}
-            </TabsContent>
+						<TabsContent value="time" className="space-y-4">
+							{isLoadingLast7DaysTime ? (
+								<div className="space-y-2">
+									{[1, 2, 3].map((i) => (
+										<Skeleton key={i} className="h-16 w-full" />
+									))}
+								</div>
+							) : recentTimeEntries.length === 0 ? (
+								<div className="text-center py-8 text-muted-foreground">
+									No time entries yet. Start logging your time!
+								</div>
+							) : (
+								<div className="space-y-4">
+									{recentTimeEntries.map((entry) => (
+										<div
+											key={entry.id}
+											className="flex items-center justify-between rounded-lg border p-4"
+										>
+											<div className="space-y-1">
+												<div className="flex items-center gap-2">
+													<p className="font-medium">{entry.project.name}</p>
+													<Badge variant="secondary">{entry.task.name}</Badge>
+												</div>
+												<p className="text-sm text-muted-foreground">
+													{entry.notes || "No notes"}
+												</p>
+												<p className="text-xs text-muted-foreground">
+													{format(new Date(entry.spent_date), "PPP")}
+												</p>
+											</div>
+											<Badge variant="outline" className="ml-4">
+												{entry.hours}h
+											</Badge>
+										</div>
+									))}
+									{recentTimeEntries.length >= 5 && (
+										<Button asChild variant="outline" className="w-full">
+											<Link href="/dashboard/time">View All Time Entries</Link>
+										</Button>
+									)}
+								</div>
+							)}
+						</TabsContent>
 
-            <TabsContent value="expenses" className="space-y-4">
-              {isLoadingLast7DaysExpenses ? (
-                <div className="space-y-2">
-                  {[1, 2, 3].map(i => (
-                    <Skeleton key={i} className="h-16 w-full" />
-                  ))}
-                </div>
-              ) : recentExpenses.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  No expenses yet. Start submitting your expenses!
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {recentExpenses.map(expense => (
-                    <div
-                      key={expense.id}
-                      className="flex items-center justify-between rounded-lg border p-4"
-                    >
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium">{expense.project.name}</p>
-                          <Badge variant="secondary">{expense.expense_category.name}</Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          {expense.notes || 'No notes'}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {format(new Date(expense.spent_date), 'PPP')}
-                        </p>
-                      </div>
-                      <div className="flex flex-col items-end gap-2 ml-4">
-                        <Badge variant="outline">${expense.total_cost.toFixed(2)}</Badge>
-                        <Badge
-                          variant={
-                            expense.is_billed
-                              ? 'default'
-                              : expense.is_locked
-                                ? 'outline'
-                                : 'secondary'
-                          }
-                        >
-                          {expense.is_billed ? 'Billed' : expense.is_locked ? 'Locked' : 'Pending'}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
-                  {recentExpenses.length >= 5 && (
-                    <Button asChild variant="outline" className="w-full">
-                      <Link href="/dashboard/expenses">View All Expenses</Link>
-                    </Button>
-                  )}
-                </div>
-              )}
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
-    </div>
-  );
+						<TabsContent value="expenses" className="space-y-4">
+							{isLoadingLast7DaysExpenses ? (
+								<div className="space-y-2">
+									{[1, 2, 3].map((i) => (
+										<Skeleton key={i} className="h-16 w-full" />
+									))}
+								</div>
+							) : recentExpenses.length === 0 ? (
+								<div className="text-center py-8 text-muted-foreground">
+									No expenses yet. Start submitting your expenses!
+								</div>
+							) : (
+								<div className="space-y-4">
+									{recentExpenses.map((expense) => (
+										<div
+											key={expense.id}
+											className="flex items-center justify-between rounded-lg border p-4"
+										>
+											<div className="space-y-1">
+												<div className="flex items-center gap-2">
+													<p className="font-medium">{expense.project.name}</p>
+													<Badge variant="secondary">
+														{expense.expense_category.name}
+													</Badge>
+												</div>
+												<p className="text-sm text-muted-foreground">
+													{expense.notes || "No notes"}
+												</p>
+												<p className="text-xs text-muted-foreground">
+													{format(new Date(expense.spent_date), "PPP")}
+												</p>
+											</div>
+											<div className="flex flex-col items-end gap-2 ml-4">
+												<Badge variant="outline">
+													${expense.total_cost.toFixed(2)}
+												</Badge>
+												<Badge
+													variant={
+														expense.is_billed
+															? "default"
+															: expense.is_locked
+																? "outline"
+																: "secondary"
+													}
+												>
+													{expense.is_billed
+														? "Billed"
+														: expense.is_locked
+															? "Locked"
+															: "Pending"}
+												</Badge>
+											</div>
+										</div>
+									))}
+									{recentExpenses.length >= 5 && (
+										<Button asChild variant="outline" className="w-full">
+											<Link href="/dashboard/expenses">View All Expenses</Link>
+										</Button>
+									)}
+								</div>
+							)}
+						</TabsContent>
+					</Tabs>
+				</CardContent>
+			</Card>
+		</div>
+	);
 }
