@@ -49,7 +49,6 @@ const adminNavigation = [
 		name: "Projects",
 		href: "/dashboard/admin/projects",
 		icon: Briefcase,
-		adminOnly: true,
 	},
 	{
 		name: "Clients",

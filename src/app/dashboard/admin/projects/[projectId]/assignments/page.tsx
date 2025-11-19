@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { ArrowLeft, Plus, Trash2, Check, X } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Check, X, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -30,6 +30,7 @@ export default function ProjectAssignmentsPage() {
 	const { data: session } = useSession();
 	const isAdminOrManager = useIsAdminOrManager();
 	const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+	const [editAssignmentId, setEditAssignmentId] = useState<number | undefined>();
 
 	// Data hooks must be called before early returns
 	const { data: assignmentsData, isLoading: isLoadingAssignments } =
@@ -133,6 +134,14 @@ export default function ProjectAssignmentsPage() {
 					<Button
 						variant="ghost"
 						size="icon"
+						onClick={() => setEditAssignmentId(a.id)}
+						title="Edit assignment"
+					>
+						<Edit className="h-4 w-4" />
+					</Button>
+					<Button
+						variant="ghost"
+						size="icon"
 						onClick={() => handleDelete(a.id)}
 						disabled={deleteMutation.isPending}
 						title="Remove assignment"
@@ -215,9 +224,15 @@ export default function ProjectAssignmentsPage() {
 
 			{/* Modals */}
 			<UserAssignmentFormModal
-				open={isCreateModalOpen}
-				onOpenChange={setIsCreateModalOpen}
+				open={isCreateModalOpen || !!editAssignmentId}
+				onOpenChange={(open) => {
+					if (!open) {
+						setIsCreateModalOpen(false);
+						setEditAssignmentId(undefined);
+					}
+				}}
 				projectId={projectId}
+				assignmentId={editAssignmentId}
 			/>
 		</div>
 	);

@@ -50,14 +50,21 @@ export async function PATCH(
 
 		const body = await request.json();
 
+		console.log("Received body:", body); // Add this
+		console.log("Budget in body:", body.budget); // Add this
+
 		// Validate request body
 		const validation = validateRequest(userAssignmentUpdateSchema, body);
+
+		console.log("Validation result:", validation); // Add this
 		if (!validation.success) {
 			return NextResponse.json(
 				{ error: validation.message, errors: validation.errors },
 				{ status: 400 },
 			);
 		}
+
+		console.log("Validated data:", validation.data); // Add this
 
 		const client = createHarvestClient(accessToken);
 		const assignment = await client.updateUserAssignment(

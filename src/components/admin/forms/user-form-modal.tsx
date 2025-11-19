@@ -28,6 +28,7 @@ import { toast } from "sonner";
 import { hoursToSeconds, secondsToHours } from "@/lib/harvest/utils";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const userFormSchema = z.object({
 	first_name: z.string().min(1, "First name is required"),
@@ -35,6 +36,7 @@ const userFormSchema = z.object({
 	email: z.string().email("Invalid email address"),
 	roles: z.string().optional(), // Free-text job title (e.g., "Senior Developer")
 	access_roles: z.string().min(1, "Access role is required"),
+	manager_permissions: z.array(z.string()).optional(),
 	is_contractor: z.boolean().default(false),
 	weekly_capacity: z
 		.string()
@@ -64,6 +66,16 @@ const ACCESS_ROLES = [
 	{ value: "member", label: "Member" },
 ];
 
+const MANAGER_PERMISSIONS = [
+	{ value: "project_creator", label: "Project Creator" },
+	{ value: "billable_rates_manager", label: "Billable Rates Manager" },
+	{ value: "managed_projects_invoice_drafter", label: "Invoice Drafter" },
+	{ value: "managed_projects_invoice_manager", label: "Invoice Manager" },
+	{ value: "client_and_task_manager", label: "Client & Task Manager" },
+	{ value: "time_and_expenses_manager", label: "Time & Expenses Manager" },
+	{ value: "estimates_manager", label: "Estimates Manager" },
+];
+
 export function UserFormModal({
 	open,
 	onOpenChange,
@@ -82,6 +94,7 @@ export function UserFormModal({
 			email: "",
 			roles: "",
 			access_roles: "member",
+			manager_permissions: [],
 			is_contractor: false,
 			weekly_capacity: "40",
 			default_hourly_rate: "",
@@ -89,17 +102,26 @@ export function UserFormModal({
 		},
 	});
 
+	const watchedAccessRole = form.watch("access_roles");
+
 	// Pre-populate form in edit mode
 	useEffect(() => {
 		if (isEditMode && usersData && open) {
 			const user = usersData.users.find((u) => u.id === userId);
 			if (user) {
+				// Extract manager permissions from access_roles array
+				const managerPerms =
+					user.access_roles?.filter(
+						(role) => !["administrator", "manager", "member"].includes(role),
+					) || [];
+
 				form.reset({
 					first_name: user.first_name,
 					last_name: user.last_name,
 					email: user.email,
 					roles: user.roles?.join(", ") || "",
 					access_roles: user.access_roles?.[0] || "member",
+					manager_permissions: managerPerms,
 					is_contractor: user.is_contractor,
 					weekly_capacity: user.weekly_capacity
 						? secondsToHours(user.weekly_capacity).toString()
@@ -115,6 +137,7 @@ export function UserFormModal({
 				email: "",
 				roles: "",
 				access_roles: "member",
+				manager_permissions: [],
 				is_contractor: false,
 				weekly_capacity: "40",
 				default_hourly_rate: "",
@@ -123,8 +146,21 @@ export function UserFormModal({
 		}
 	}, [usersData, userId, isEditMode, open, form]);
 
+	// Clear manager_permissions when switching away from manager role
+	useEffect(() => {
+		if (watchedAccessRole !== "manager") {
+			form.setValue("manager_permissions", []);
+		}
+	}, [watchedAccessRole, form]);
+
 	const onSubmit = async (data: UserFormData) => {
 		try {
+			// Combine base role with manager permissions
+			const access_roles =
+				data.access_roles === "manager"
+					? ["manager", ...(data.manager_permissions || [])]
+					: [data.access_roles];
+
 			const payload: any = {
 				first_name: data.first_name,
 				last_name: data.last_name,
@@ -135,7 +171,7 @@ export function UserFormModal({
 							.map((r) => r.trim())
 							.filter((r) => r.length > 0)
 					: [],
-				access_roles: [data.access_roles],
+				access_roles,
 				is_contractor: data.is_contractor,
 				weekly_capacity: hoursToSeconds(
 					Number.parseFloat(data.weekly_capacity),
@@ -293,6 +329,58 @@ export function UserFormModal({
 									</FormItem>
 								)}
 							/>
+
+							{watchedAccessRole === "manager" && (
+								<FormField
+									control={form.control}
+									name="manager_permissions"
+									render={({ field }) => (
+										<FormItem>
+											<FormLabel>Manager Permissions</FormLabel>
+											<div className="space-y-3 rounded-lg border p-4">
+												{MANAGER_PERMISSIONS.map((permission) => (
+													<div
+														key={permission.value}
+														className="flex items-center gap-3"
+													>
+														<Checkbox
+															id={permission.value}
+															checked={field.value?.includes(permission.value)}
+															onCheckedChange={(checked) => {
+																const currentValue = field.value || [];
+																if (checked) {
+																	field.onChange([
+																		...currentValue,
+																		permission.value,
+																	]);
+																} else {
+																	field.onChange(
+																		currentValue.filter(
+																			(v) => v !== permission.value,
+																		),
+																	);
+																}
+															}}
+														/>
+														<Label
+															htmlFor={permission.value}
+															className="text-sm font-normal cursor-pointer"
+														>
+															{permission.label}
+														</Label>
+													</div>
+												))}
+											</div>
+											<FormDescription>
+												Select additional permissions for this manager. These
+												permissions grant specific capabilities beyond the base
+												manager role.
+											</FormDescription>
+											<FormMessage />
+										</FormItem>
+									)}
+								/>
+							)}
 
 							<FormField
 								control={form.control}

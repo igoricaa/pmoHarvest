@@ -13,8 +13,13 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { useSession } from "@/lib/auth-client";
-import { useIsAdmin } from "@/lib/admin-utils-client";
-import { useProjects, useDeleteProject } from "@/hooks/use-harvest";
+import { useIsAdmin, useIsAdminOrManager } from "@/lib/admin-utils-client";
+import {
+	useProjects,
+	useDeleteProject,
+	useManagedProjects,
+	useUserProjectAssignments,
+} from "@/hooks/use-harvest";
 import { toast } from "sonner";
 import { DataTable, type Column } from "@/components/admin/data-table";
 import { ProjectFormModal } from "@/components/admin/forms/project-form-modal";
@@ -24,6 +29,7 @@ import { Badge } from "@/components/ui/badge";
 export default function AdminProjectsPage() {
 	const router = useRouter();
 	const { data: session } = useSession();
+	const isAdminOrManager = useIsAdminOrManager();
 	const isAdmin = useIsAdmin();
 	const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 	const [editProjectId, setEditProjectId] = useState<number>();
@@ -32,18 +38,36 @@ export default function AdminProjectsPage() {
 		"all" | "active" | "archived"
 	>("active");
 
-	// Fetch all projects for admins
-	const { data: projectsData, isLoading } = useProjects({
-		enabled: !!session && isAdmin,
-	});
+	const { data: managedProjectIds } = useManagedProjects();
+
+	// Conditional query pattern - admin gets all projects, manager gets user assignments
+	const { data: allProjectsData, isLoading: isLoadingAllProjects } =
+		useProjects({
+			enabled: !!session && isAdmin,
+		});
+
+	const { data: userAssignmentsData, isLoading: isLoadingUserAssignments } =
+		useUserProjectAssignments({
+			enabled: !!session && !isAdmin && isAdminOrManager,
+		});
 
 	const deleteMutation = useDeleteProject();
+
+	// Determine which data to use and loading state (must be before early returns)
+	const projectsData = isAdmin ? allProjectsData : userAssignmentsData;
+
+	const isLoading = isAdmin ? isLoadingAllProjects : isLoadingUserAssignments;
 
 	// Filter projects
 	const filteredProjects = (() => {
 		if (!projectsData?.projects) return [];
 
 		let projects = projectsData.projects;
+
+		// Apply manager filtering
+		if (!isAdmin && isAdminOrManager && managedProjectIds) {
+			projects = projects.filter((p) => managedProjectIds.includes(p.id));
+		}
 
 		// Apply active filter
 		if (activeFilter === "active") {
@@ -66,20 +90,20 @@ export default function AdminProjectsPage() {
 		return projects;
 	})();
 
-	// Redirect if not admin
+	// Redirect if not admin or manager
 	useEffect(() => {
-		if (session && !isAdmin) {
+		if (session && isAdminOrManager === false) {
 			router.push("/dashboard");
 		}
-	}, [session, isAdmin, router]);
+	}, [session, isAdminOrManager, router]);
 
 	// Show loading state while session is loading or redirecting
-	if (!session || isAdmin === undefined) {
+	if (!session || isAdminOrManager === undefined) {
 		return null;
 	}
 
 	// Show nothing if redirecting
-	if (isAdmin === false) {
+	if (isAdminOrManager === false) {
 		return null;
 	}
 

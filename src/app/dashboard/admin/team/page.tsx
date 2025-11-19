@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Edit, Check, X, Plus } from "lucide-react";
+import { Edit, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -19,6 +19,13 @@ import { UserFormModal } from "@/components/admin/forms/user-form-modal";
 import type { HarvestUser } from "@/types/harvest";
 import { Badge } from "@/components/ui/badge";
 import { secondsToHours } from "@/lib/harvest/utils";
+
+function formatRoleName(role: string): string {
+	return role
+		.split("_")
+		.map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+		.join(" ");
+}
 
 export default function AdminTeamPage() {
 	const router = useRouter();
@@ -137,7 +144,7 @@ export default function AdminTeamPage() {
 											: "outline"
 								}
 							>
-								{role}
+								{formatRoleName(role)}
 							</Badge>
 						))
 					) : (
