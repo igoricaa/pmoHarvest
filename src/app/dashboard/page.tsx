@@ -24,6 +24,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TimeEntryModal } from "@/components/time-entry-modal";
 import { ExpenseModal } from "@/components/expense-modal";
 import { useIsAdmin } from "@/lib/admin-utils-client";
+import { cn } from "@/lib/utils";
 
 export default function DashboardPage() {
 	const [timeModalOpen, setTimeModalOpen] = useState(false);
@@ -96,11 +97,19 @@ export default function DashboardPage() {
 			(sum, entry) => sum + entry.hours,
 			0,
 		) || 0;
-	const last7DaysExpenseTotal =
-		last7DaysExpenses?.expenses.reduce(
-			(sum, expense) => sum + expense.total_cost,
-			0,
-		) || 0;
+	// Group expenses by currency and calculate totals
+	const expensesByCurrency = (() => {
+		const expenses = last7DaysExpenses?.expenses || [];
+		const grouped = new Map<string, number>();
+		expenses.forEach((expense) => {
+			const currency = expense.client.currency;
+			const existing = grouped.get(currency) || 0;
+			grouped.set(currency, existing + expense.total_cost);
+		});
+		return Array.from(grouped.entries())
+			.map(([currency, total]) => ({ currency, total }))
+			.sort((a, b) => b.total - a.total);
+	})();
 	const pendingExpenses =
 		last7DaysExpenses?.expenses.filter((e) => !e.is_billed && !e.is_locked)
 			.length || 0;
@@ -172,9 +181,27 @@ export default function DashboardPage() {
 					<CardContent>
 						{isLoadingLast7DaysExpenses ? (
 							<Skeleton className="h-8 w-20" />
-						) : (
+						) : expensesByCurrency.length === 0 ? (
+							<div className="text-2xl font-bold">0.00</div>
+						) : expensesByCurrency.length === 1 ? (
 							<div className="text-2xl font-bold">
-								${last7DaysExpenseTotal.toFixed(2)}
+								{expensesByCurrency[0].total.toFixed(2)}{" "}
+								{expensesByCurrency[0].currency}
+							</div>
+						) : (
+							<div className="space-y-1">
+								{expensesByCurrency.map((item) => (
+									<div
+										key={item.currency}
+										className={cn(
+											"font-bold",
+											expensesByCurrency,
+											length > 3 ? "text-base" : "text-lg",
+										)}
+									>
+										{item.total.toFixed(2)} {item.currency}
+									</div>
+								))}
 							</div>
 						)}
 						<p className="text-xs text-muted-foreground">
@@ -319,7 +346,8 @@ export default function DashboardPage() {
 											</div>
 											<div className="flex flex-col items-end gap-2 ml-4">
 												<Badge variant="outline">
-													${expense.total_cost.toFixed(2)}
+													{expense.total_cost.toFixed(2)}{" "}
+													{expense.client.currency}
 												</Badge>
 												<Badge
 													variant={

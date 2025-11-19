@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useEffect } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import {
@@ -77,37 +77,47 @@ export default function AdminDashboardPage() {
 	const { data: usersData } = useUsers({ enabled: !!session && isAdmin });
 
 	// Filter data based on manager's projects
-	const filteredTimeEntries = useMemo(() => {
-		if (!timeEntriesData?.time_entries) return [];
-		if (isAdmin || !managedProjectIds) return timeEntriesData.time_entries;
-		return timeEntriesData.time_entries.filter((entry) =>
-			managedProjectIds.includes(entry.project.id),
-		);
-	}, [timeEntriesData, isAdmin, managedProjectIds]);
+	const filteredTimeEntries = !timeEntriesData?.time_entries
+		? []
+		: isAdmin || !managedProjectIds
+			? timeEntriesData.time_entries
+			: timeEntriesData.time_entries.filter((entry) =>
+					managedProjectIds.includes(entry.project.id),
+				);
 
-	const filteredExpenses = useMemo(() => {
-		if (!expensesData?.expenses) return [];
-		if (isAdmin || !managedProjectIds) return expensesData.expenses;
-		return expensesData.expenses.filter((expense) =>
-			managedProjectIds.includes(expense.project.id),
-		);
-	}, [expensesData, isAdmin, managedProjectIds]);
+	const filteredExpenses = !expensesData?.expenses
+		? []
+		: isAdmin || !managedProjectIds
+			? expensesData.expenses
+			: expensesData.expenses.filter((expense) =>
+					managedProjectIds.includes(expense.project.id),
+				);
 
 	// Calculate stats
 	const totalHours = filteredTimeEntries.reduce(
 		(sum, entry) => sum + entry.hours,
 		0,
 	);
-	const totalExpenses = filteredExpenses.reduce(
-		(sum, expense) => sum + expense.total_cost,
-		0,
-	);
+
+	// Group expenses by currency and calculate totals
+	const expensesByCurrency = (() => {
+		const grouped = new Map<string, number>();
+		filteredExpenses.forEach((expense) => {
+			const currency = expense.client.currency;
+			const existing = grouped.get(currency) || 0;
+			grouped.set(currency, existing + expense.total_cost);
+		});
+		return Array.from(grouped.entries())
+			.map(([currency, total]) => ({ currency, total }))
+			.sort((a, b) => b.total - a.total); // Sort by total descending
+	})();
+
 	const activeProjects =
 		projectsData?.projects.filter((p) => p.is_active).length || 0;
 	const activeUsers = usersData?.users.filter((u) => u.is_active).length || 0;
 
 	// Group time entries by project
-	const projectHours = useMemo(() => {
+	const projectHours = (() => {
 		const grouped = new Map<string, { name: string; hours: number }>();
 		filteredTimeEntries.forEach((entry) => {
 			const existing = grouped.get(entry.project.name) || {
@@ -122,25 +132,30 @@ export default function AdminDashboardPage() {
 		return Array.from(grouped.values())
 			.sort((a, b) => b.hours - a.hours)
 			.slice(0, 5);
-	}, [filteredTimeEntries]);
+	})();
 
 	// Group expenses by project
-	const projectExpenses = useMemo(() => {
-		const grouped = new Map<string, { name: string; cost: number }>();
+	const projectExpenses = (() => {
+		const grouped = new Map<
+			string,
+			{ name: string; cost: number; currency: string }
+		>();
 		filteredExpenses.forEach((expense) => {
 			const existing = grouped.get(expense.project.name) || {
 				name: expense.project.name,
 				cost: 0,
+				currency: expense.client.currency,
 			};
 			grouped.set(expense.project.name, {
 				name: expense.project.name,
 				cost: existing.cost + expense.total_cost,
+				currency: existing.currency, // Preserve the currency from first expense
 			});
 		});
 		return Array.from(grouped.values())
 			.sort((a, b) => b.cost - a.cost)
 			.slice(0, 5);
-	}, [filteredExpenses]);
+	})();
 
 	if (!session || isAdminOrManager === undefined) {
 		return null;
@@ -182,10 +197,34 @@ export default function AdminDashboardPage() {
 						<DollarSign className="h-4 w-4 text-muted-foreground" />
 					</CardHeader>
 					<CardContent>
-						<div className="text-2xl font-bold">
-							${totalExpenses.toFixed(2)}
-						</div>
-						<p className="text-xs text-muted-foreground">Last 30 days</p>
+						{expensesByCurrency.length === 0 ? (
+							<>
+								<div className="text-2xl font-bold">0.00</div>
+								<p className="text-xs text-muted-foreground">Last 30 days</p>
+							</>
+						) : expensesByCurrency.length === 1 ? (
+							<>
+								<div className="text-2xl font-bold">
+									{expensesByCurrency[0].total.toFixed(2)}{" "}
+									{expensesByCurrency[0].currency}
+								</div>
+								<p className="text-xs text-muted-foreground">Last 30 days</p>
+							</>
+						) : (
+							<div className="space-y-1">
+								{expensesByCurrency.map(({ currency, total }) => (
+									<div key={currency} className="flex items-baseline gap-2">
+										<span className="text-2xl font-bold">
+											{total.toFixed(2)}
+										</span>
+										<span className="text-lg font-bold">{currency}</span>
+									</div>
+								))}
+								<p className="text-xs text-muted-foreground pt-1">
+									Last 30 days
+								</p>
+							</div>
+						)}
 					</CardContent>
 				</Card>
 
@@ -242,8 +281,8 @@ export default function AdminDashboardPage() {
 										</TableRow>
 									</TableHeader>
 									<TableBody>
-										{projectHours.map((project, index) => (
-											<TableRow key={index}>
+										{projectHours.map((project) => (
+											<TableRow key={project.name}>
 												<TableCell className="font-medium">
 													{project.name}
 												</TableCell>
@@ -282,14 +321,14 @@ export default function AdminDashboardPage() {
 										</TableRow>
 									</TableHeader>
 									<TableBody>
-										{projectExpenses.map((project, index) => (
-											<TableRow key={index}>
+										{projectExpenses.map((project) => (
+											<TableRow key={project.name}>
 												<TableCell className="font-medium">
 													{project.name}
 												</TableCell>
 												<TableCell className="text-right">
 													<Badge variant="secondary">
-														${project.cost.toFixed(2)}
+														{project.cost.toFixed(2)} {project.currency}
 													</Badge>
 												</TableCell>
 											</TableRow>

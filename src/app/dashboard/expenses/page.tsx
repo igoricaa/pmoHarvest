@@ -154,12 +154,6 @@ export default function ExpensesPage() {
 							<CardTitle>Recent Expenses</CardTitle>
 							<CardDescription>Last 30 days</CardDescription>
 						</div>
-						<div className="text-right">
-							<div className="text-2xl font-bold">${totalCost.toFixed(2)}</div>
-							<div className="text-sm text-muted-foreground">
-								Total expenses
-							</div>
-						</div>
 					</div>
 				</CardHeader>
 				<CardContent>
@@ -199,7 +193,8 @@ export default function ExpensesPage() {
 											<TableCell>{expense.expense_category.name}</TableCell>
 											<TableCell>
 												<Badge variant="secondary">
-													${expense.total_cost.toFixed(2)}
+													{expense.total_cost.toFixed(2)}{" "}
+													{expense.client.currency}
 												</Badge>
 											</TableCell>
 											<TableCell>{expense.user.name}</TableCell>

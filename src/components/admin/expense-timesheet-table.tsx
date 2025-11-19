@@ -132,7 +132,8 @@ export function ExpenseTimesheetTable({
 										<TableCell>{expense.expense_category.name}</TableCell>
 										<TableCell className="text-right">
 											<Badge variant="secondary">
-												${expense.total_cost.toFixed(2)}
+												{expense.total_cost.toFixed(2)}{" "}
+												{expense.client.currency}
 											</Badge>
 										</TableCell>
 										<TableCell className="text-center">

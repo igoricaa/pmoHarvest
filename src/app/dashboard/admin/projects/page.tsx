@@ -159,7 +159,7 @@ export default function AdminProjectsPage() {
 
 				return (
 					<span className="text-sm">
-						{isCostBased && "$"}
+						{isCostBased && `${p.client.currency} `}
 						{budgetValue}
 						{isHoursBased && "h"}
 					</span>

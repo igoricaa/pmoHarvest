@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { format } from "date-fns";
@@ -83,7 +83,7 @@ export default function AdminExpensesPage() {
 	const deleteMutation = useDeleteExpense();
 
 	// Filter expenses based on manager's projects (must be before early returns)
-	const filteredExpenses = useMemo(() => {
+	const filteredExpenses = (() => {
 		if (!expensesData?.expenses) return [];
 
 		let expenses = expensesData.expenses;
@@ -108,7 +108,7 @@ export default function AdminExpensesPage() {
 		}
 
 		return expenses;
-	}, [expensesData, isAdmin, isAdminOrManager, managedProjectIds, searchQuery]);
+	})();
 
 	// Redirect if not admin or manager (using useEffect to avoid React render error)
 	useEffect(() => {
@@ -138,10 +138,19 @@ export default function AdminExpensesPage() {
 		}
 	};
 
-	const totalCost = filteredExpenses.reduce(
-		(sum, expense) => sum + expense.total_cost,
-		0,
-	);
+	// Group expenses by currency and calculate totals
+	const expensesByCurrency = (() => {
+		const grouped = new Map<string, number>();
+		filteredExpenses.forEach((expense) => {
+			const currency = expense.client.currency;
+			const existing = grouped.get(currency) || 0;
+			grouped.set(currency, existing + expense.total_cost);
+		});
+		return Array.from(grouped.entries())
+			.map(([currency, total]) => ({ currency, total }))
+			.sort((a, b) => b.total - a.total);
+	})();
+
 	const pendingCount = filteredExpenses.filter(
 		(e) => e.approval_status === "submitted",
 	).length;
@@ -237,10 +246,41 @@ export default function AdminExpensesPage() {
 							<CardDescription>Last 30 days</CardDescription>
 						</div>
 						<div className="text-right">
-							<div className="text-2xl font-bold">${totalCost.toFixed(2)}</div>
-							<div className="text-sm text-muted-foreground">
-								Total expenses
-							</div>
+							{expensesByCurrency.length === 0 ? (
+								<>
+									<div className="text-2xl font-bold">0.00</div>
+									<div className="text-sm text-muted-foreground">
+										Total expenses
+									</div>
+								</>
+							) : expensesByCurrency.length === 1 ? (
+								<>
+									<div className="text-sm text-muted-foreground">
+										Total expenses
+									</div>
+									<div className="text-2xl font-bold">
+										{expensesByCurrency[0].total.toFixed(2)}{" "}
+										{expensesByCurrency[0].currency}
+									</div>
+								</>
+							) : (
+								<div className="space-y-1">
+									<div className="text-sm text-muted-foreground pt-1">
+										Total expenses
+									</div>
+									{expensesByCurrency.map(({ currency, total }) => (
+										<div
+											key={currency}
+											className="flex items-baseline gap-2 justify-end"
+										>
+											<span className="text-2xl font-bold">
+												{total.toFixed(2)}
+											</span>
+											<span className="text-lg font-bold">{currency}</span>
+										</div>
+									))}
+								</div>
+							)}
 						</div>
 					</div>
 				</CardHeader>
@@ -281,7 +321,8 @@ export default function AdminExpensesPage() {
 											<TableCell>{expense.expense_category.name}</TableCell>
 											<TableCell>
 												<Badge variant="secondary">
-													${expense.total_cost.toFixed(2)}
+													{expense.total_cost.toFixed(2)}{" "}
+													{expense.client.currency}
 												</Badge>
 											</TableCell>
 											<TableCell>{expense.user.name}</TableCell>

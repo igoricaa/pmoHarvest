@@ -16,6 +16,7 @@ import { useIsAdminOrManager } from "@/lib/admin-utils-client";
 import {
 	useProjectUserAssignments,
 	useDeleteUserAssignment,
+	useProjects,
 } from "@/hooks/use-harvest";
 import { toast } from "sonner";
 import { DataTable, type Column } from "@/components/admin/data-table";
@@ -30,15 +31,21 @@ export default function ProjectAssignmentsPage() {
 	const { data: session } = useSession();
 	const isAdminOrManager = useIsAdminOrManager();
 	const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-	const [editAssignmentId, setEditAssignmentId] = useState<number | undefined>();
+	const [editAssignmentId, setEditAssignmentId] = useState<
+		number | undefined
+	>();
 
 	// Data hooks must be called before early returns
 	const { data: assignmentsData, isLoading: isLoadingAssignments } =
 		useProjectUserAssignments(projectId);
 	const deleteMutation = useDeleteUserAssignment(projectId);
+	const { data: projectsData } = useProjects();
 
 	// Get project data from the first assignment (must be before early returns)
 	const projectData = assignmentsData?.user_assignments[0]?.project;
+	// Get full project data including client to access currency
+	const fullProject = projectsData?.projects.find((p) => p.id === projectId);
+	const clientCurrency = fullProject?.client?.currency || "EUR";
 
 	// Redirect if not admin or manager (using useEffect to avoid React render error)
 	useEffect(() => {
@@ -86,7 +93,7 @@ export default function ProjectAssignmentsPage() {
 					{a.use_default_rates ? (
 						<span className="text-muted-foreground">Default rate</span>
 					) : (
-						`$${a.hourly_rate?.toFixed(2)}/h`
+						`${a.hourly_rate?.toFixed(2)} ${clientCurrency}/h`
 					)}
 				</span>
 			),
