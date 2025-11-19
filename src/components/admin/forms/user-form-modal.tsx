@@ -26,6 +26,8 @@ import { Input } from "@/components/ui/input";
 import { useUsers, useCreateUser, useUpdateUser } from "@/hooks/use-harvest";
 import { toast } from "sonner";
 import { hoursToSeconds, secondsToHours } from "@/lib/harvest/utils";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 
 const userFormSchema = z.object({
 	first_name: z.string().min(1, "First name is required"),
@@ -264,29 +266,25 @@ export function UserFormModal({
 									<FormItem>
 										<FormLabel>Access Roles</FormLabel>
 										<div className="space-y-2">
-											{ACCESS_ROLES.map((role) => (
-												<div
-													key={role.value}
-													className="flex items-center gap-2"
-												>
-													<input
-														type="radio"
-														id={role.value}
-														name="access_roles"
-														className="h-4 w-4"
-														checked={field.value === role.value}
-														onChange={() => {
-															field.onChange(role.value);
-														}}
-													/>
-													<label
-														htmlFor={role.value}
-														className="text-sm font-medium cursor-pointer"
+											<RadioGroup
+												defaultValue={field.value}
+												name={field.name}
+												value={field.value}
+												onValueChange={field.onChange}
+											>
+												{ACCESS_ROLES.map((role) => (
+													<div
+														key={role.value}
+														className="flex items-center gap-3"
 													>
-														{role.label}
-													</label>
-												</div>
-											))}
+														<RadioGroupItem
+															value={role.value}
+															id={role.value}
+														/>
+														<Label htmlFor={role.value}>{role.label}</Label>
+													</div>
+												))}
+											</RadioGroup>
 										</div>
 										<FormDescription>
 											Select an access role. Determines user permissions.
