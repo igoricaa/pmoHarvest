@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { Edit, Trash2, Check, X, Plus, Users } from "lucide-react";
@@ -13,13 +13,8 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { useSession } from "@/lib/auth-client";
-import { useIsAdmin, useIsAdminOrManager } from "@/lib/admin-utils";
-import {
-	useProjects,
-	useUserProjectAssignments,
-	useDeleteProject,
-	useManagedProjects,
-} from "@/hooks/use-harvest";
+import { useIsAdmin } from "@/lib/admin-utils";
+import { useProjects, useDeleteProject } from "@/hooks/use-harvest";
 import { toast } from "sonner";
 import { DataTable, type Column } from "@/components/admin/data-table";
 import { ProjectFormModal } from "@/components/admin/forms/project-form-modal";
@@ -29,7 +24,6 @@ import { Badge } from "@/components/ui/badge";
 export default function AdminProjectsPage() {
 	const router = useRouter();
 	const { data: session } = useSession();
-	const isAdminOrManager = useIsAdminOrManager();
 	const isAdmin = useIsAdmin();
 	const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 	const [editProjectId, setEditProjectId] = useState<number>();
@@ -38,34 +32,18 @@ export default function AdminProjectsPage() {
 		"all" | "active" | "archived"
 	>("active");
 
-	const { data: managedProjectIds } = useManagedProjects();
-
-	// Conditional query pattern - admin gets all projects, manager gets user assignments
-	const { data: allProjectsData, isLoading: isLoadingAllProjects } =
-		useProjects({
-			enabled: !!session && isAdmin,
-		});
-
-	const { data: userAssignmentsData, isLoading: isLoadingUserAssignments } =
-		useUserProjectAssignments({
-			enabled: !!session && !isAdmin && isAdminOrManager,
-		});
+	// Fetch all projects for admins
+	const { data: projectsData, isLoading } = useProjects({
+		enabled: !!session && isAdmin,
+	});
 
 	const deleteMutation = useDeleteProject();
 
-	// Determine which data to use and loading state (must be before early returns)
-	const projectsData = isAdmin ? allProjectsData : userAssignmentsData;
-	const isLoading = isAdmin ? isLoadingAllProjects : isLoadingUserAssignments;
-
-	const filteredProjects = useMemo(() => {
+	// Filter projects
+	const filteredProjects = (() => {
 		if (!projectsData?.projects) return [];
 
 		let projects = projectsData.projects;
-
-		// Apply manager filtering
-		if (!isAdmin && isAdminOrManager && managedProjectIds) {
-			projects = projects.filter((p) => managedProjectIds.includes(p.id));
-		}
 
 		// Apply active filter
 		if (activeFilter === "active") {
@@ -86,29 +64,22 @@ export default function AdminProjectsPage() {
 		}
 
 		return projects;
-	}, [
-		projectsData,
-		isAdmin,
-		isAdminOrManager,
-		managedProjectIds,
-		activeFilter,
-		searchQuery,
-	]);
+	})();
 
-	// Redirect if not admin or manager (using useEffect to avoid React render error)
+	// Redirect if not admin
 	useEffect(() => {
-		if (session && isAdminOrManager === false) {
+		if (session && !isAdmin) {
 			router.push("/dashboard");
 		}
-	}, [session, isAdminOrManager, router]);
+	}, [session, isAdmin, router]);
 
 	// Show loading state while session is loading or redirecting
-	if (!session || isAdminOrManager === undefined) {
+	if (!session || isAdmin === undefined) {
 		return null;
 	}
 
 	// Show nothing if redirecting
-	if (isAdminOrManager === false) {
+	if (isAdmin === false) {
 		return null;
 	}
 
@@ -118,7 +89,7 @@ export default function AdminProjectsPage() {
 		try {
 			await deleteMutation.mutateAsync(id);
 			toast.success("Project deleted successfully");
-		} catch (error) {
+		} catch {
 			toast.error("Failed to delete project");
 		}
 	};

@@ -41,9 +41,6 @@ export async function GET(request: NextRequest) {
 		// Fetch current user's project assignments (works for all users)
 		// Uses /users/me endpoint which automatically resolves to authenticated user
 		const assignments = await harvestClient.getCurrentUserProjectAssignments();
-		console.log("assignments:", assignments);
-
-		console.log("raw:", assignments.project_assignments);
 
 		// Return raw data if requested (for manager filtering with is_project_manager flag)
 		if (raw === "true") {
@@ -53,7 +50,19 @@ export async function GET(request: NextRequest) {
 		// Transform project_assignments response to match projects response structure
 		// Harvest returns { project_assignments: [...] } but we need { projects: [...] }
 		const transformedResponse = {
-			projects: assignments.project_assignments?.map((pa) => pa.project) || [],
+			projects:
+				assignments.project_assignments?.map((pa) => {
+					const enrichedProject: any = {
+						...pa.project,
+						// Ensure is_active is included (prefer project.is_active, fallback to assignment.is_active, default to true)
+						is_active: pa.project.is_active ?? pa.is_active ?? true,
+					};
+					// Include client if available in assignment (client exists in API response but not in type definition)
+					if ("client" in pa && pa.client) {
+						enrichedProject.client = pa.client;
+					}
+					return enrichedProject;
+				}) || [],
 			per_page: assignments.per_page,
 			total_pages: assignments.total_pages,
 			total_entries: assignments.total_entries,
@@ -62,8 +71,6 @@ export async function GET(request: NextRequest) {
 			page: assignments.page,
 			links: assignments.links,
 		};
-
-		console.log("transformedResponse:", transformedResponse);
 
 		return NextResponse.json(transformedResponse);
 	} catch (error) {
