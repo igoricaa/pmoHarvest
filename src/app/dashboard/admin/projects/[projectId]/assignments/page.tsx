@@ -24,59 +24,17 @@ import { UserAssignmentFormModal } from "@/components/admin/forms/user-assignmen
 import type { HarvestUserAssignment } from "@/types/harvest";
 import { Badge } from "@/components/ui/badge";
 
-export default function ProjectAssignmentsPage() {
-	const router = useRouter();
-	const params = useParams();
-	const projectId = parseInt(params.projectId as string);
-	const { data: session } = useSession();
-	const isAdminOrManager = useIsAdminOrManager();
-	const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-	const [editAssignmentId, setEditAssignmentId] = useState<
-		number | undefined
-	>();
-
-	// Data hooks must be called before early returns
-	const { data: assignmentsData, isLoading: isLoadingAssignments } =
-		useProjectUserAssignments(projectId);
-	const deleteMutation = useDeleteUserAssignment(projectId);
-	const { data: projectsData } = useProjects();
-
-	// Get project data from the first assignment (must be before early returns)
-	const projectData = assignmentsData?.user_assignments[0]?.project;
-	// Get full project data including client to access currency
-	const fullProject = projectsData?.projects.find((p) => p.id === projectId);
-	const clientCurrency = fullProject?.client?.currency || "EUR";
-
-	// Redirect if not admin or manager (using useEffect to avoid React render error)
-	useEffect(() => {
-		if (session && isAdminOrManager === false) {
-			router.push("/dashboard");
-		}
-	}, [session, isAdminOrManager, router]);
-
-	// Show loading state while session is loading or redirecting
-	if (!session || isAdminOrManager === undefined) {
-		return null;
-	}
-
-	// Show nothing if redirecting
-	if (isAdminOrManager === false) {
-		return null;
-	}
-
-	const handleDelete = async (id: number) => {
-		if (!confirm("Are you sure you want to remove this user assignment?"))
-			return;
-
-		try {
-			await deleteMutation.mutateAsync(id);
-			toast.success("Assignment removed successfully");
-		} catch (error) {
-			toast.error("Failed to remove assignment");
-		}
-	};
-
-	const columns: Column<HarvestUserAssignment>[] = [
+/**
+ * Column factory for user assignments table
+ * Extracted outside component to prevent recreation on every render
+ */
+function createAssignmentColumns(
+	clientCurrency: string,
+	onEdit: (id: number) => void,
+	onDelete: (id: number) => Promise<void>,
+	deleteIsPending: boolean,
+): Column<HarvestUserAssignment>[] {
+	return [
 		{
 			header: "User",
 			accessor: (a) => (
@@ -141,7 +99,7 @@ export default function ProjectAssignmentsPage() {
 					<Button
 						variant="ghost"
 						size="icon"
-						onClick={() => setEditAssignmentId(a.id)}
+						onClick={() => onEdit(a.id)}
 						title="Edit assignment"
 					>
 						<Edit className="h-4 w-4" />
@@ -149,8 +107,8 @@ export default function ProjectAssignmentsPage() {
 					<Button
 						variant="ghost"
 						size="icon"
-						onClick={() => handleDelete(a.id)}
-						disabled={deleteMutation.isPending}
+						onClick={() => onDelete(a.id)}
+						disabled={deleteIsPending}
 						title="Remove assignment"
 					>
 						<Trash2 className="h-4 w-4" />
@@ -160,6 +118,70 @@ export default function ProjectAssignmentsPage() {
 			className: "text-right",
 		},
 	];
+}
+
+export default function ProjectAssignmentsPage() {
+	const router = useRouter();
+	const params = useParams();
+	const projectId = parseInt(params.projectId as string);
+	const { data: session } = useSession();
+	const isAdminOrManager = useIsAdminOrManager();
+	const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+	const [editAssignmentId, setEditAssignmentId] = useState<
+		number | undefined
+	>();
+
+	// Data hooks must be called before early returns
+	const { data: assignmentsData, isLoading: isLoadingAssignments } =
+		useProjectUserAssignments(projectId);
+	const deleteMutation = useDeleteUserAssignment(projectId);
+	// Optimize: Only fetch projects if user is authorized (prevents wasted request before redirect)
+	const { data: projectsData } = useProjects({
+		enabled: !!session && isAdminOrManager !== false,
+	});
+
+	// Get project data from the first assignment (must be before early returns)
+	const projectData = assignmentsData?.user_assignments[0]?.project;
+	// Get full project data including client to access currency
+	const fullProject = projectsData?.projects.find((p) => p.id === projectId);
+	const clientCurrency = fullProject?.client?.currency || "EUR";
+
+	// Redirect if not admin or manager (using useEffect to avoid React render error)
+	useEffect(() => {
+		if (session && isAdminOrManager === false) {
+			router.push("/dashboard");
+		}
+	}, [session, isAdminOrManager, router]);
+
+	// Show loading state while session is loading or redirecting
+	if (!session || isAdminOrManager === undefined) {
+		return null;
+	}
+
+	// Show nothing if redirecting
+	if (isAdminOrManager === false) {
+		return null;
+	}
+
+	const handleDelete = async (id: number) => {
+		if (!confirm("Are you sure you want to remove this user assignment?"))
+			return;
+
+		try {
+			await deleteMutation.mutateAsync(id);
+			toast.success("Assignment removed successfully");
+		} catch (error) {
+			toast.error("Failed to remove assignment");
+		}
+	};
+
+	// Use column factory to prevent recreation on every render
+	const columns = createAssignmentColumns(
+		clientCurrency,
+		setEditAssignmentId,
+		handleDelete,
+		deleteMutation.isPending,
+	);
 
 	return (
 		<div className="space-y-6">
@@ -240,6 +262,7 @@ export default function ProjectAssignmentsPage() {
 				}}
 				projectId={projectId}
 				assignmentId={editAssignmentId}
+				projectsData={projectsData}
 			/>
 		</div>
 	);

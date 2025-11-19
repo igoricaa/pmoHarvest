@@ -36,9 +36,9 @@ import {
 	useProjectUserAssignments,
 	useCreateUserAssignment,
 	useUpdateUserAssignment,
-	useProjects,
 } from "@/hooks/use-harvest";
 import { toast } from "sonner";
+import type { HarvestProjectResponse } from "@/types/harvest";
 
 const userAssignmentFormSchema = z.object({
 	user_id: z.string().min(1, "User is required"),
@@ -56,6 +56,7 @@ interface UserAssignmentFormModalProps {
 	onOpenChange: (open: boolean) => void;
 	projectId: number;
 	assignmentId?: number;
+	projectsData?: HarvestProjectResponse;
 }
 
 export function UserAssignmentFormModal({
@@ -63,6 +64,7 @@ export function UserAssignmentFormModal({
 	onOpenChange,
 	projectId,
 	assignmentId,
+	projectsData,
 }: UserAssignmentFormModalProps) {
 	const isEditMode = !!assignmentId;
 	const { data: usersData, isLoading: isLoadingUsers } = useUsers({
@@ -70,7 +72,7 @@ export function UserAssignmentFormModal({
 	});
 	const { data: assignmentsData, isLoading: isLoadingAssignments } =
 		useProjectUserAssignments(projectId);
-	const { data: projectsData } = useProjects();
+	// Use passed-in projectsData from parent to avoid duplicate fetch
 	const project = projectsData?.projects.find((p) => p.id === projectId);
 	const createMutation = useCreateUserAssignment(projectId);
 	const updateMutation = useUpdateUserAssignment(projectId, assignmentId!);

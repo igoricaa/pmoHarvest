@@ -5,10 +5,7 @@ import { getErrorMessage } from "@/lib/api-utils";
 import { logError } from "@/lib/logger";
 import { validateRequest } from "@/lib/validation/validate-request";
 import { timeEntryCreateSchema } from "@/lib/validation/harvest-schemas";
-import type {
-	CreateTimeEntryInput,
-	TimeEntryQueryParams,
-} from "@/types/harvest";
+import type { TimeEntryQueryParams } from "@/types/harvest";
 
 export async function GET(request: NextRequest) {
 	try {
@@ -49,6 +46,11 @@ export async function GET(request: NextRequest) {
 			is_running: searchParams.get("is_running")
 				? searchParams.get("is_running") === "true"
 				: undefined,
+			approval_status: searchParams.get("approval_status") as
+				| "unsubmitted"
+				| "submitted"
+				| "approved"
+				| undefined,
 		};
 
 		const harvestClient = createHarvestClient(accessToken);
