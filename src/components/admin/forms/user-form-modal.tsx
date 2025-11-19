@@ -23,12 +23,12 @@ import {
 	FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useUsers, useCreateUser, useUpdateUser } from "@/hooks/use-harvest";
 import { toast } from "sonner";
 import { hoursToSeconds, secondsToHours } from "@/lib/harvest/utils";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 
 const userFormSchema = z.object({
 	first_name: z.string().min(1, "First name is required"),
@@ -458,11 +458,9 @@ export function UserFormModal({
 											</FormDescription>
 										</div>
 										<FormControl>
-											<input
-												type="checkbox"
-												className="h-4 w-4"
+											<Checkbox
 												checked={field.value}
-												onChange={field.onChange}
+												onCheckedChange={field.onChange}
 											/>
 										</FormControl>
 									</FormItem>

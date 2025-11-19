@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Edit, Trash2, Check, X, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
 	Card,
 	CardContent,
@@ -167,12 +168,11 @@ export default function AdminClientsPage() {
 				<CardContent className="pt-6">
 					<div className="flex flex-wrap gap-4">
 						<div className="flex-1 min-w-[200px]">
-							<input
+							<Input
 								type="text"
 								placeholder="Search by name..."
 								value={searchQuery}
 								onChange={(e) => setSearchQuery(e.target.value)}
-								className="w-full px-3 py-2 border rounded-md"
 							/>
 						</div>
 						<div className="flex gap-2">

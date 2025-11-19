@@ -23,6 +23,7 @@ import {
 	FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
 	Select,
 	SelectContent,
@@ -540,11 +541,9 @@ export function ProjectFormModal({
 									render={({ field }) => (
 										<FormItem className="flex items-center gap-2">
 											<FormControl>
-												<input
-													type="checkbox"
-													className="h-4 w-4"
+												<Checkbox
 													checked={field.value}
-													onChange={field.onChange}
+													onCheckedChange={field.onChange}
 												/>
 											</FormControl>
 											<FormLabel className="!mt-0">Billable</FormLabel>
@@ -558,11 +557,9 @@ export function ProjectFormModal({
 									render={({ field }) => (
 										<FormItem className="flex items-center gap-2">
 											<FormControl>
-												<input
-													type="checkbox"
-													className="h-4 w-4"
+												<Checkbox
 													checked={field.value}
-													onChange={field.onChange}
+													onCheckedChange={field.onChange}
 												/>
 											</FormControl>
 											<FormLabel className="!mt-0">Active</FormLabel>

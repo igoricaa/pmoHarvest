@@ -23,6 +23,7 @@ import {
 	FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
 	Select,
 	SelectContent,
@@ -247,11 +248,9 @@ export function UserAssignmentFormModal({
 											</FormDescription>
 										</div>
 										<FormControl>
-											<input
-												type="checkbox"
-												className="h-4 w-4"
+											<Checkbox
 												checked={field.value}
-												onChange={field.onChange}
+												onCheckedChange={field.onChange}
 											/>
 										</FormControl>
 									</FormItem>
@@ -272,11 +271,9 @@ export function UserAssignmentFormModal({
 											</FormDescription>
 										</div>
 										<FormControl>
-											<input
-												type="checkbox"
-												className="h-4 w-4"
+											<Checkbox
 												checked={field.value}
-												onChange={field.onChange}
+												onCheckedChange={field.onChange}
 											/>
 										</FormControl>
 									</FormItem>
@@ -297,11 +294,9 @@ export function UserAssignmentFormModal({
 											</FormDescription>
 										</div>
 										<FormControl>
-											<input
-												type="checkbox"
-												className="h-4 w-4"
+											<Checkbox
 												checked={field.value}
-												onChange={field.onChange}
+												onCheckedChange={field.onChange}
 											/>
 										</FormControl>
 									</FormItem>
