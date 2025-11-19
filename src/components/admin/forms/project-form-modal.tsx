@@ -115,6 +115,10 @@ export function ProjectFormModal({
 	const createMutation = useCreateProject();
 	const updateMutation = useUpdateProject(projectId!);
 
+	// State for date picker popovers
+	const [startDateOpen, setStartDateOpen] = useState(false);
+	const [endDateOpen, setEndDateOpen] = useState(false);
+
 	// Extract unique clients from projects for managers
 	const managerClients = (() => {
 		if (isAdmin || !projectsData?.projects) return [];
@@ -440,91 +444,88 @@ export function ProjectFormModal({
 								<FormField
 									control={form.control}
 									name="starts_on"
-									render={({ field }) => {
-										const [isOpen, setIsOpen] = useState(false);
-										return (
-											<FormItem className="flex flex-col">
-												<FormLabel>Start Date (Optional)</FormLabel>
-												<Popover open={isOpen} onOpenChange={setIsOpen}>
-													<PopoverTrigger asChild>
-														<FormControl>
-															<Button
-																variant="outline"
-																className={cn(
-																	"pl-3 text-left font-normal",
-																	!field.value && "text-muted-foreground",
-																)}
-															>
-																{field.value ? (
-																	format(field.value, "PP")
-																) : (
-																	<span>Pick a date</span>
-																)}
-																<CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-															</Button>
-														</FormControl>
-													</PopoverTrigger>
-													<PopoverContent className="w-auto p-0" align="start">
-														<Calendar
-															mode="single"
-															selected={field.value}
-															onSelect={(date) => {
-																field.onChange(date);
-																setIsOpen(false);
-															}}
-															initialFocus
-														/>
-													</PopoverContent>
-												</Popover>
-												<FormMessage />
-											</FormItem>
-										);
-									}}
+									render={({ field }) => (
+										<FormItem className="flex flex-col">
+											<FormLabel>Start Date (Optional)</FormLabel>
+											<Popover
+												open={startDateOpen}
+												onOpenChange={setStartDateOpen}
+											>
+												<PopoverTrigger asChild>
+													<FormControl>
+														<Button
+															variant="outline"
+															className={cn(
+																"pl-3 text-left font-normal",
+																!field.value && "text-muted-foreground",
+															)}
+														>
+															{field.value ? (
+																format(field.value, "PP")
+															) : (
+																<span>Pick a date</span>
+															)}
+															<CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+														</Button>
+													</FormControl>
+												</PopoverTrigger>
+												<PopoverContent className="w-auto p-0" align="start">
+													<Calendar
+														mode="single"
+														selected={field.value}
+														onSelect={(date) => {
+															field.onChange(date);
+															setStartDateOpen(false);
+														}}
+														initialFocus
+													/>
+												</PopoverContent>
+											</Popover>
+											<FormMessage />
+										</FormItem>
+									)}
 								/>
 
 								<FormField
 									control={form.control}
 									name="ends_on"
-									render={({ field }) => {
-										const [isOpen, setIsOpen] = useState(false);
-										return (
-											<FormItem className="flex flex-col">
-												<FormLabel>End Date (Optional)</FormLabel>
-												<Popover open={isOpen} onOpenChange={setIsOpen}>
-													<PopoverTrigger asChild>
-														<FormControl>
-															<Button
-																variant="outline"
-																className={cn(
-																	"pl-3 text-left font-normal",
-																	!field.value && "text-muted-foreground",
-																)}
-															>
-																{field.value ? (
-																	format(field.value, "PP")
-																) : (
-																	<span>Pick a date</span>
-																)}
-																<CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-															</Button>
-														</FormControl>
-													</PopoverTrigger>
-													<PopoverContent className="w-auto p-0" align="start">
-														<Calendar
-															mode="single"
-															selected={field.value}
-															onSelect={(date) => {
-																field.onChange(date);
-																setIsOpen(false);
-															}}
-															initialFocus
-														/>
-													</PopoverContent>
-												</Popover>
-												<FormMessage />
-											</FormItem>
-										);
-									}}
+									render={({ field }) => (
+										<FormItem className="flex flex-col">
+											<FormLabel>End Date (Optional)</FormLabel>
+											<Popover open={endDateOpen} onOpenChange={setEndDateOpen}>
+												<PopoverTrigger asChild>
+													<FormControl>
+														<Button
+															variant="outline"
+															className={cn(
+																"pl-3 text-left font-normal",
+																!field.value && "text-muted-foreground",
+															)}
+														>
+															{field.value ? (
+																format(field.value, "PP")
+															) : (
+																<span>Pick a date</span>
+															)}
+															<CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+														</Button>
+													</FormControl>
+												</PopoverTrigger>
+												<PopoverContent className="w-auto p-0" align="start">
+													<Calendar
+														mode="single"
+														selected={field.value}
+														onSelect={(date) => {
+															field.onChange(date);
+															setEndDateOpen(false);
+														}}
+														initialFocus
+													/>
+												</PopoverContent>
+											</Popover>
+											<FormMessage />
+										</FormItem>
+									)}
 								/>
 							</div>
 
