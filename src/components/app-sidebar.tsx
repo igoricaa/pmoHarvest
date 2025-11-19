@@ -46,7 +46,7 @@ const adminNavigation = [
 		icon: Receipt,
 	},
 	{ name: "Projects", href: "/dashboard/admin/projects", icon: Briefcase },
-	{ name: "Clients", href: "/dashboard/admin/clients", icon: DollarSign },
+	{ name: "Clients", href: "/dashboard/admin/clients", icon: DollarSign, adminOnly: true },
 	{ name: "Team", href: "/dashboard/admin/team", icon: Users, adminOnly: true },
 ];
 

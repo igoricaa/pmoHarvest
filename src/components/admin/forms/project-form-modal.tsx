@@ -44,6 +44,7 @@ import {
 } from "@/hooks/use-harvest";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useIsAdmin } from "@/lib/admin-utils";
 
 const projectFormSchema = z
 	.object({
@@ -103,10 +104,38 @@ export function ProjectFormModal({
 	projectId,
 }: ProjectFormModalProps) {
 	const isEditMode = !!projectId;
-	const { data: clientsData, isLoading: isLoadingClients } = useClients();
+	const isAdmin = useIsAdmin();
+
+	// Only fetch clients if admin (managers can't access clients API)
+	const { data: clientsData, isLoading: isLoadingClients } = useClients(
+		undefined,
+		{ enabled: isAdmin === true },
+	);
 	const { data: projectsData, isLoading: isLoadingProjects } = useProjects();
 	const createMutation = useCreateProject();
 	const updateMutation = useUpdateProject(projectId!);
+
+	// Extract unique clients from projects for managers
+	const managerClients = (() => {
+		if (isAdmin || !projectsData?.projects) return [];
+		const clientMap = new Map<
+			number,
+			{ id: number; name: string; is_active: boolean }
+		>();
+		projectsData.projects.forEach((p) => {
+			if (!clientMap.has(p.client.id)) {
+				clientMap.set(p.client.id, {
+					id: p.client.id,
+					name: p.client.name,
+					is_active: true, // Assume active if project exists
+				});
+			}
+		});
+		return Array.from(clientMap.values());
+	})();
+
+	// Determine which client list to use
+	const availableClients = isAdmin ? clientsData?.clients : managerClients;
 
 	const form = useForm<ProjectFormData>({
 		resolver: zodResolver(projectFormSchema),
@@ -224,6 +253,16 @@ export function ProjectFormModal({
 					</DialogDescription>
 				</DialogHeader>
 
+				{!isEditMode && isAdmin === false && (
+					<div className="p-4 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-md">
+						<p className="text-sm text-blue-800 dark:text-blue-200">
+							You can create projects using clients from your managed projects.
+							If you need to create a project with a new client, please contact
+							an administrator.
+						</p>
+					</div>
+				)}
+
 				{isEditMode && isLoadingProjects ? (
 					<div className="flex items-center justify-center p-8">
 						<Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -237,29 +276,45 @@ export function ProjectFormModal({
 								render={({ field }) => (
 									<FormItem>
 										<FormLabel>Client</FormLabel>
-										<Select
-											onValueChange={field.onChange}
-											value={field.value}
-											disabled={isLoadingClients}
-										>
-											<FormControl>
-												<SelectTrigger>
-													<SelectValue placeholder="Select client" />
-												</SelectTrigger>
-											</FormControl>
-											<SelectContent>
-												{clientsData?.clients
-													.filter((c) => c.is_active)
-													.map((client) => (
-														<SelectItem
-															key={client.id}
-															value={client.id.toString()}
-														>
-															{client.name}
-														</SelectItem>
-													))}
-											</SelectContent>
-										</Select>
+										{isAdmin || !isEditMode ? (
+											<Select
+												onValueChange={field.onChange}
+												value={field.value}
+												disabled={
+													isLoadingClients ||
+													(isAdmin === false && isLoadingProjects)
+												}
+											>
+												<FormControl>
+													<SelectTrigger>
+														<SelectValue placeholder="Select client" />
+													</SelectTrigger>
+												</FormControl>
+												<SelectContent>
+													{availableClients
+														?.filter((c) => c.is_active)
+														.map((client) => (
+															<SelectItem
+																key={client.id}
+																value={client.id.toString()}
+															>
+																{client.name}
+															</SelectItem>
+														))}
+													{availableClients?.length === 0 && (
+														<div className="px-2 py-1.5 text-sm text-muted-foreground">
+															No clients available
+														</div>
+													)}
+												</SelectContent>
+											</Select>
+										) : (
+											// Managers editing: show read-only client name
+											<div className="px-3 py-2 border rounded-md bg-muted text-sm">
+												{projectsData?.projects.find((p) => p.id === projectId)
+													?.client.name || "N/A"}
+											</div>
+										)}
 										<FormMessage />
 									</FormItem>
 								)}
@@ -520,7 +575,15 @@ export function ProjectFormModal({
 								>
 									Cancel
 								</Button>
-								<Button type="submit" disabled={isLoading}>
+								<Button
+									type="submit"
+									disabled={
+										isLoading ||
+										(!isEditMode &&
+											isAdmin === false &&
+											(!availableClients || availableClients.length === 0))
+									}
+								>
 									{isLoading && (
 										<Loader2 className="mr-2 h-4 w-4 animate-spin" />
 									)}

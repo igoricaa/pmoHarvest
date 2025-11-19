@@ -915,7 +915,10 @@ export function useDeleteUser() {
 // Clients (Admin/Manager)
 // ============================================================================
 
-export function useClients(params?: { is_active?: boolean }) {
+export function useClients(
+	params?: { is_active?: boolean },
+	options?: { enabled?: boolean },
+) {
 	return useQuery({
 		queryKey: harvestKeys.clients(params),
 		queryFn: async () => {
@@ -927,6 +930,7 @@ export function useClients(params?: { is_active?: boolean }) {
 		},
 		staleTime: 5 * 60 * 1000, // 5 minutes
 		refetchOnWindowFocus: true,
+		enabled: options?.enabled,
 	});
 }
 

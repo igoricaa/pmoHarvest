@@ -12,7 +12,7 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { useSession } from "@/lib/auth-client";
-import { useIsAdminOrManager } from "@/lib/admin-utils";
+import { useIsAdmin } from "@/lib/admin-utils";
 import { useClients, useDeleteClient } from "@/hooks/use-harvest";
 import { toast } from "sonner";
 import { DataTable, type Column } from "@/components/admin/data-table";
@@ -22,7 +22,7 @@ import type { HarvestClient } from "@/types/harvest";
 export default function AdminClientsPage() {
 	const router = useRouter();
 	const { data: session } = useSession();
-	const isAdminOrManager = useIsAdminOrManager();
+	const isAdmin = useIsAdmin();
 	const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 	const [editClientId, setEditClientId] = useState<number>();
 	const [searchQuery, setSearchQuery] = useState("");
@@ -60,20 +60,20 @@ export default function AdminClientsPage() {
 		return clients;
 	}, [clientsData, activeFilter, searchQuery]);
 
-	// Redirect if not admin or manager (using useEffect to avoid React render error)
+	// Redirect if not admin (using useEffect to avoid React render error)
 	useEffect(() => {
-		if (session && isAdminOrManager === false) {
+		if (session && isAdmin === false) {
 			router.push("/dashboard");
 		}
-	}, [session, isAdminOrManager, router]);
+	}, [session, isAdmin, router]);
 
 	// Show loading state while session is loading or redirecting
-	if (!session || isAdminOrManager === undefined) {
+	if (!session || isAdmin === undefined) {
 		return null;
 	}
 
 	// Show nothing if redirecting
-	if (isAdminOrManager === false) {
+	if (isAdmin === false) {
 		return null;
 	}
 

@@ -3,7 +3,7 @@ import { auth } from '@/lib/auth';
 import { createHarvestClient } from '@/lib/harvest';
 import { getErrorMessage } from '@/lib/api-utils';
 import { logError } from '@/lib/logger';
-import { isAdminOrManager } from '@/lib/admin-utils';
+import { isAdmin } from '@/lib/admin-utils';
 import { validateRequest } from '@/lib/validation/validate-request';
 import { clientUpdateSchema } from '@/lib/validation/harvest-schemas';
 import type { UpdateClientInput } from '@/types/harvest';
@@ -18,10 +18,10 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Admin or Manager access required
-    if (!isAdminOrManager(session)) {
+    // Admin access required
+    if (!isAdmin(session)) {
       return NextResponse.json(
-        { error: 'Forbidden - Admin or Manager access required' },
+        { error: 'Forbidden - Admin access required' },
         { status: 403 }
       );
     }
@@ -61,10 +61,10 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Admin or Manager access required
-    if (!isAdminOrManager(session)) {
+    // Admin access required
+    if (!isAdmin(session)) {
       return NextResponse.json(
-        { error: 'Forbidden - Admin or Manager access required' },
+        { error: 'Forbidden - Admin access required' },
         { status: 403 }
       );
     }
@@ -114,10 +114,10 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Admin or Manager access required
-    if (!isAdminOrManager(session)) {
+    // Admin access required
+    if (!isAdmin(session)) {
       return NextResponse.json(
-        { error: 'Forbidden - Admin or Manager access required' },
+        { error: 'Forbidden - Admin access required' },
         { status: 403 }
       );
     }

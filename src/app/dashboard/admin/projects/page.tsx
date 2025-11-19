@@ -38,8 +38,6 @@ export default function AdminProjectsPage() {
 		"all" | "active" | "archived"
 	>("active");
 
-	// IMPORTANT: All hooks must be called BEFORE any early returns
-	// Get managed project IDs for managers (called unconditionally)
 	const { data: managedProjectIds } = useManagedProjects();
 
 	// Conditional query pattern - admin gets all projects, manager gets user assignments
@@ -59,7 +57,6 @@ export default function AdminProjectsPage() {
 	const projectsData = isAdmin ? allProjectsData : userAssignmentsData;
 	const isLoading = isAdmin ? isLoadingAllProjects : isLoadingUserAssignments;
 
-	// Filter projects (must be before early returns)
 	const filteredProjects = useMemo(() => {
 		if (!projectsData?.projects) return [];
 
@@ -251,10 +248,12 @@ export default function AdminProjectsPage() {
 						{isAdmin ? "Manage all projects" : "Manage your assigned projects"}
 					</p>
 				</div>
-				<Button onClick={() => setIsCreateModalOpen(true)}>
-					<Plus className="mr-2 h-4 w-4" />
-					Create Project
-				</Button>
+				{isAdmin && (
+					<Button onClick={() => setIsCreateModalOpen(true)}>
+						<Plus className="mr-2 h-4 w-4" />
+						Create Project
+					</Button>
+				)}
 			</div>
 
 			{/* Filters */}
