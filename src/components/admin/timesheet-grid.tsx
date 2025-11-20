@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { createTimesheetGrid, formatWeekRange } from '@/lib/timesheet-utils';
 import type { HarvestTimeEntry } from '@/types/harvest';
 import type { TimesheetGrid as TimesheetGridType } from '@/lib/timesheet-utils';
@@ -48,9 +48,7 @@ export function TimesheetGrid({
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
 
-  const grid: TimesheetGridType = useMemo(() => {
-    return createTimesheetGrid(entries, weekStart);
-  }, [entries, weekStart]);
+  const grid = createTimesheetGrid(entries, weekStart);
 
   const handleReject = async () => {
     if (!onReject) return;

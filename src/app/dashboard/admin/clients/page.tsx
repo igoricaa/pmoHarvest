@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Edit, Trash2, Check, X, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -36,7 +36,7 @@ export default function AdminClientsPage() {
 	const deleteMutation = useDeleteClient();
 
 	// Filter clients (must be before early returns)
-	const filteredClients = useMemo(() => {
+	const filteredClients = (() => {
 		if (!clientsData?.clients) return [];
 
 		let clients = clientsData.clients;
@@ -59,7 +59,7 @@ export default function AdminClientsPage() {
 		}
 
 		return clients;
-	}, [clientsData, activeFilter, searchQuery]);
+	})();
 
 	// Redirect if not admin (using useEffect to avoid React render error)
 	useEffect(() => {

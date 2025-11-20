@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { formatWeekRange } from '@/lib/timesheet-utils';
 import type { WeeklyTimesheet, WeeklyExpenseSheet } from '@/lib/timesheet-utils';
@@ -42,7 +42,7 @@ export function PendingTimesheetsList(props: Props) {
   const [userFilter, setUserFilter] = useState<string>('all');
 
   // Extract unique users for filter dropdown
-  const uniqueUsers = useMemo(() => {
+  const uniqueUsers = (() => {
     if (props.type === 'time') {
       const users = new Map<number, string>();
       (props as PendingTimesheetsListProps).timesheets.forEach(ts => {
@@ -56,10 +56,10 @@ export function PendingTimesheetsList(props: Props) {
       });
       return Array.from(users.entries()).map(([id, name]) => ({ id, name }));
     }
-  }, [props]);
+  })();
 
   // Filter timesheets/expenses by selected user
-  const filteredData = useMemo(() => {
+  const filteredData = (() => {
     if (userFilter === 'all') {
       return props.type === 'time'
         ? (props as PendingTimesheetsListProps).timesheets
@@ -72,7 +72,7 @@ export function PendingTimesheetsList(props: Props) {
     } else {
       return (props as PendingExpensesListProps).expenseSheets.filter(es => es.userId === userId);
     }
-  }, [props, userFilter]);
+  })();
 
   const handleViewTimesheet = (userId: number, weekStart: string) => {
     if (props.type === 'time') {

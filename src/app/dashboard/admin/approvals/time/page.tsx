@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useSession } from "@/lib/auth-client";
@@ -24,7 +24,7 @@ export default function PendingTimeEntriesPage() {
 	});
 
 	// Filter time entries based on manager's projects
-	const filteredTimeEntries = useMemo(() => {
+	const filteredTimeEntries = (() => {
 		if (!timeEntriesData?.time_entries) return [];
 
 		let entries = timeEntriesData.time_entries;
@@ -37,12 +37,10 @@ export default function PendingTimeEntriesPage() {
 		}
 
 		return entries;
-	}, [timeEntriesData, isAdmin, isAdminOrManager, managedProjectIds]);
+	})();
 
 	// Group by user and week
-	const timesheets = useMemo(() => {
-		return groupTimeEntriesByUserAndWeek(filteredTimeEntries);
-	}, [filteredTimeEntries]);
+	const timesheets = groupTimeEntriesByUserAndWeek(filteredTimeEntries);
 
 	// Redirect if not admin or manager
 	useEffect(() => {

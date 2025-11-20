@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useSession } from "@/lib/auth-client";
@@ -24,7 +24,7 @@ export default function PendingExpensesPage() {
 	});
 
 	// Filter expenses based on manager's projects
-	const filteredExpenses = useMemo(() => {
+	const filteredExpenses = (() => {
 		if (!expensesData?.expenses) return [];
 
 		let expenses = expensesData.expenses;
@@ -37,12 +37,10 @@ export default function PendingExpensesPage() {
 		}
 
 		return expenses;
-	}, [expensesData, isAdmin, isAdminOrManager, managedProjectIds]);
+	})();
 
 	// Group by user and week
-	const expenseSheets = useMemo(() => {
-		return groupExpensesByUserAndWeek(filteredExpenses);
-	}, [filteredExpenses]);
+	const expenseSheets = groupExpensesByUserAndWeek(filteredExpenses);
 
 	// Redirect if not admin or manager
 	useEffect(() => {

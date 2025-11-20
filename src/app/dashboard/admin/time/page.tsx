@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { format } from "date-fns";
@@ -76,7 +76,7 @@ export default function AdminTimePage() {
 	const deleteMutation = useDeleteTimeEntry();
 
 	// Filter time entries based on manager's projects (must be before early returns)
-	const filteredTimeEntries = useMemo(() => {
+	const filteredTimeEntries = (() => {
 		if (!timeEntriesData?.time_entries) return [];
 
 		let entries = timeEntriesData.time_entries;
@@ -100,13 +100,7 @@ export default function AdminTimePage() {
 		}
 
 		return entries;
-	}, [
-		timeEntriesData,
-		isAdmin,
-		isAdminOrManager,
-		managedProjectIds,
-		searchQuery,
-	]);
+	})();
 
 	// Redirect if not admin or manager (using useEffect to avoid React render error)
 	useEffect(() => {

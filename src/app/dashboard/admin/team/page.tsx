@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Edit, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -43,17 +43,17 @@ export default function AdminTeamPage() {
 	const { data: usersData, isLoading } = useUsers();
 
 	// Extract unique roles from all users
-	const availableRoles = useMemo(() => {
+	const availableRoles = (() => {
 		if (!usersData?.users) return [];
 		const rolesSet = new Set<string>();
 		usersData.users.forEach((user) => {
 			user.roles?.forEach((role) => rolesSet.add(role));
 		});
 		return Array.from(rolesSet).sort();
-	}, [usersData]);
+	})();
 
 	// Filter users (must be before early returns)
-	const filteredUsers = useMemo(() => {
+	const filteredUsers = (() => {
 		if (!usersData?.users) return [];
 
 		let users = usersData.users;
@@ -82,7 +82,7 @@ export default function AdminTeamPage() {
 		}
 
 		return users;
-	}, [usersData, activeFilter, roleFilter, searchQuery]);
+	})();
 
 	// Redirect if not admin (using useEffect to avoid React render error)
 	useEffect(() => {
